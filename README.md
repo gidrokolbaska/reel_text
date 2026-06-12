@@ -158,6 +158,21 @@ When the platform requests reduced motion
 text instantly instead of rolling. Opt out per widget with
 `respectDisableAnimations: false`.
 
+### Dynamic fonts
+
+`SlotText` measures glyph slots from the active Flutter text layout. If your app
+loads fonts asynchronously, preload them before the first `SlotText` frame so
+initial slot widths are measured with the final font:
+
+```dart
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  GoogleFonts.archivoBlack();
+  await GoogleFonts.pendingFonts();
+  runApp(const App());
+}
+```
+
 ## Options
 
 | Option | Default | Description |

@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:slot_text/slot_text.dart';
 
 import 'recipes_page.dart';
 import 'showcase_page.dart';
 import 'studio.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  GoogleFonts.archivoBlack();
+  GoogleFonts.spaceMono();
+  GoogleFonts.spaceMono(fontWeight: FontWeight.w700);
+  await GoogleFonts.pendingFonts();
+
   runApp(const SlotTextExampleApp());
 }
 
