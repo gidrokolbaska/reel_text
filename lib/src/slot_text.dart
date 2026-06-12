@@ -49,7 +49,8 @@ class SlotTextOptions {
   /// Slide curve.
   final Curve curve;
 
-  /// Amount of deterministic per-glyph timing and tilt variation.
+  /// Amount of deterministic per-glyph timing and tilt variation, and the
+  /// depth of the settle overshoot rendered from springy [curve]s.
   final double bounce;
 
   /// Flat color used by incoming glyphs before fading back to the text color.
@@ -1222,6 +1223,9 @@ class _RollPlan {
           curve: options.curve,
           color: color,
           tiltRadians: options.bounce * 5 * math.pi / 180 * _wobble(i, 3),
+          // How much of the curve's overshoot is rendered: bounce deepens the
+          // settle bounce, bounce 0 keeps a whisper of it.
+          overshoot: 0.6 + options.bounce * 0.7,
         ),
       );
     }
@@ -1246,6 +1250,7 @@ class _SlotPlan {
     required this.curve,
     required this.color,
     required this.tiltRadians,
+    required this.overshoot,
   });
 
   final String from;
@@ -1259,6 +1264,7 @@ class _SlotPlan {
   final Curve curve;
   final Color? color;
   final double tiltRadians;
+  final double overshoot;
 
   double outT(double nowMs) => _curved(nowMs, baseMs, durationMs);
 
@@ -1301,7 +1307,17 @@ class _SlotPlan {
   }
 
   double _curved(double nowMs, int startMs, int spanMs) {
-    return curve.transform(_linear(nowMs, startMs, spanMs)).clamp(0.0, 1.0);
+    final value = curve.transform(_linear(nowMs, startMs, spanMs));
+    // Let springy curves overshoot past the resting line instead of clamping
+    // them flat — this is what makes the glyph visibly settle with a bounce.
+    // The depth is scaled by [overshoot] (driven by SlotTextOptions.bounce).
+    if (value > 1) {
+      return 1 + (value - 1) * overshoot;
+    }
+    if (value < 0) {
+      return value * overshoot;
+    }
+    return value;
   }
 }
 

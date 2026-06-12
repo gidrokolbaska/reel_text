@@ -9,6 +9,8 @@
 - The stagger cascade now runs across changed slots only, so tail-only diffs
   (counters, ellipsis dots) start instantly; incoming glyphs skip `exitOffset`
   when their slot was empty.
+- Springy curves now render their overshoot (it was clamped flat before), so
+  glyphs visibly settle with a bounce; `bounce` scales the overshoot depth.
 - Added reduced-motion support: `SlotText` snaps instantly when the platform
   disables animations (`respectDisableAnimations`).
 - Added widget tests and a two-page studio example app (designed showcase +

@@ -167,7 +167,7 @@ text instantly instead of rolling. Opt out per widget with
 | `duration` | `300ms` | Per-glyph slide duration. |
 | `exitOffset` | `50ms` | Delay before incoming glyphs chase outgoing glyphs. |
 | `curve` | springy cubic | Slide curve. |
-| `bounce` | `0.6` | Per-glyph timing and tilt variation. |
+| `bounce` | `0.6` | Per-glyph timing/tilt variation and settle-overshoot depth. |
 | `color` | null | Flat incoming glyph tint. |
 | `colorBuilder` | null | Per-glyph incoming tint, such as `chromatic()`. |
 | `colorFade` | `280ms` | Tint fade-back duration. |
