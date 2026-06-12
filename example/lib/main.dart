@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:slot_text/slot_text.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'recipes_page.dart';
 import 'showcase_page.dart';
@@ -106,7 +107,10 @@ class _StudioShellState extends State<StudioShell> {
       body: SafeArea(
         child: Column(
           children: [
-            _TopBar(page: _page, onPageChanged: (p) => setState(() => _page = p)),
+            _TopBar(
+              page: _page,
+              onPageChanged: (p) => setState(() => _page = p),
+            ),
             const Divider(height: 1, color: Studio.border),
             Expanded(
               child: IndexedStack(
@@ -127,6 +131,9 @@ class _TopBar extends StatelessWidget {
   final int page;
   final ValueChanged<int> onPageChanged;
 
+  static final _pubDevUri = Uri.parse('https://pub.dev/packages/slot_text');
+  static final _githubUri = Uri.parse('https://github.com/KickNext/slot_text');
+
   static const _rollOptions = SlotTextOptions(
     direction: SlotTextDirection.up,
     duration: Duration(milliseconds: 260),
@@ -134,6 +141,17 @@ class _TopBar extends StatelessWidget {
     exitOffset: Duration(milliseconds: 32),
     bounce: 0.2,
   );
+
+  static Future<void> _open(Uri uri) async {
+    final launched = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+      webOnlyWindowName: '_blank',
+    );
+    if (!launched) {
+      debugPrint('Could not launch $uri');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -185,6 +203,18 @@ class _TopBar extends StatelessWidget {
               ],
             ),
           const Spacer(),
+          _ExternalLinkButton(
+            tooltip: 'Open pub.dev',
+            icon: Icons.inventory_2_rounded,
+            onPressed: () => _open(_pubDevUri),
+          ),
+          const SizedBox(width: 8),
+          _ExternalLinkButton(
+            tooltip: 'Open GitHub',
+            icon: Icons.code_rounded,
+            onPressed: () => _open(_githubUri),
+          ),
+          const SizedBox(width: 10),
           // One toggle: the label names the other page and rolls on tap.
           OutlinedButton.icon(
             onPressed: () => onPageChanged(page == 0 ? 1 : 0),
@@ -194,10 +224,7 @@ class _TopBar extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 14,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
             icon: const Icon(Icons.arrow_outward_rounded, size: 15),
             label: SlotText(
@@ -216,6 +243,37 @@ class _TopBar extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ExternalLinkButton extends StatelessWidget {
+  const _ExternalLinkButton({
+    required this.tooltip,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: IconButton.outlined(
+        onPressed: onPressed,
+        style: IconButton.styleFrom(
+          fixedSize: const Size.square(40),
+          foregroundColor: Studio.text,
+          side: const BorderSide(color: Studio.borderBright),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        icon: Icon(icon, size: 18),
       ),
     );
   }

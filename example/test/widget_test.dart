@@ -12,6 +12,8 @@ void main() {
     // Top bar: the current page name and the toggle target are SlotTexts.
     expect(find.bySemanticsLabel('SHOWCASE'), findsOneWidget);
     expect(find.bySemanticsLabel('RECIPES'), findsOneWidget);
+    expect(find.byTooltip('Open pub.dev'), findsOneWidget);
+    expect(find.byTooltip('Open GitHub'), findsOneWidget);
 
     final start = find.text('Start').last;
     final complete = find.text('Complete').last;
