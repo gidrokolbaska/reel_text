@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:slot_text/slot_text.dart';
+import 'package:reel_text/reel_text.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'recipes_page.dart';
@@ -14,11 +14,11 @@ Future<void> main() async {
   GoogleFonts.spaceMono(fontWeight: FontWeight.w700);
   await GoogleFonts.pendingFonts();
 
-  runApp(const SlotTextExampleApp());
+  runApp(const ReelTextExampleApp());
 }
 
-class SlotTextExampleApp extends StatelessWidget {
-  const SlotTextExampleApp({super.key, this.useGoogleFonts = true});
+class ReelTextExampleApp extends StatelessWidget {
+  const ReelTextExampleApp({super.key, this.useGoogleFonts = true});
 
   /// Set to false in widget tests to avoid runtime font fetching.
   final bool useGoogleFonts;
@@ -39,7 +39,7 @@ class SlotTextExampleApp extends StatelessWidget {
           outlineVariant: Studio.border,
         );
     return MaterialApp(
-      title: 'slot_text studio',
+      title: 'reel_text studio',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
@@ -131,11 +131,11 @@ class _TopBar extends StatelessWidget {
   final int page;
   final ValueChanged<int> onPageChanged;
 
-  static final _pubDevUri = Uri.parse('https://pub.dev/packages/slot_text');
-  static final _githubUri = Uri.parse('https://github.com/KickNext/slot_text');
+  static final _pubDevUri = Uri.parse('https://pub.dev/packages/reel_text');
+  static final _githubUri = Uri.parse('https://github.com/KickNext/reel_text');
 
-  static const _rollOptions = SlotTextOptions(
-    direction: SlotTextDirection.up,
+  static const _rollOptions = ReelTextOptions(
+    direction: ReelTextDirection.up,
     duration: Duration(milliseconds: 260),
     stagger: Duration(milliseconds: 22),
     exitOffset: Duration(milliseconds: 32),
@@ -170,7 +170,7 @@ class _TopBar extends StatelessWidget {
               height: 38,
               child: Center(
                 child: Text(
-                  'ST',
+                  'RT',
                   style: Studio.display(
                     size: 14,
                     color: Studio.background,
@@ -186,11 +186,11 @@ class _TopBar extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'slot_text',
+                  'reel_text',
                   style: Studio.display(size: 15, letterSpacing: 0),
                 ),
                 // The current page name rolls on switch.
-                SlotText(
+                ReelText(
                   page == 0 ? 'SHOWCASE' : 'RECIPES',
                   options: _rollOptions,
                   style: Studio.mono(
@@ -227,12 +227,12 @@ class _TopBar extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
             icon: const Icon(Icons.arrow_outward_rounded, size: 15),
-            label: SlotText(
+            label: ReelText(
               page == 0 ? 'RECIPES' : 'SHOWCASE',
               options: _rollOptions.copyWith(
                 direction: page == 0
-                    ? SlotTextDirection.up
-                    : SlotTextDirection.down,
+                    ? ReelTextDirection.up
+                    : ReelTextDirection.down,
               ),
               style: Studio.mono(
                 size: 12,

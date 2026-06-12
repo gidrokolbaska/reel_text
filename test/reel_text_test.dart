@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:slot_text/slot_text.dart';
+import 'package:reel_text/reel_text.dart';
 
 void main() {
   test('chromatic creates a stable hue sweep', () {
@@ -12,7 +12,7 @@ void main() {
   });
 
   test('copyWith can replace inherited color mode', () {
-    final options = SlotTextOptions(colorBuilder: chromatic());
+    final options = ReelTextOptions(colorBuilder: chromatic());
     final replaced = options.copyWith(
       clearColor: true,
       color: const Color(0xff38bdf8),
@@ -28,12 +28,12 @@ void main() {
     await tester.pumpWidget(
       const Directionality(
         textDirection: TextDirection.ltr,
-        child: SlotText('Copy'),
+        child: ReelText('Copy'),
       ),
     );
 
     expect(find.bySemanticsLabel('Copy'), findsOneWidget);
-    expect(find.byKey(const ValueKey('slot_text_settled')), findsOneWidget);
+    expect(find.byKey(const ValueKey('reel_text_settled')), findsOneWidget);
   });
 
   testWidgets('first settled frame keeps the full text run width', (
@@ -49,7 +49,7 @@ void main() {
     await tester.pumpWidget(
       const Directionality(
         textDirection: TextDirection.ltr,
-        child: Center(child: SlotText(text, style: style)),
+        child: Center(child: ReelText(text, style: style)),
       ),
     );
 
@@ -59,23 +59,23 @@ void main() {
       maxLines: 1,
     )..layout();
 
-    expect(tester.getSize(find.byType(SlotText)).width, painter.size.width);
+    expect(tester.getSize(find.byType(ReelText)).width, painter.size.width);
   });
 
   testWidgets('declarative text changes roll then settle', (tester) async {
     await tester.pumpWidget(
       const Directionality(
         textDirection: TextDirection.ltr,
-        child: SlotText('Copy'),
+        child: ReelText('Copy'),
       ),
     );
 
     await tester.pumpWidget(
       const Directionality(
         textDirection: TextDirection.ltr,
-        child: SlotText(
+        child: ReelText(
           'Copied',
-          options: SlotTextOptions(
+          options: ReelTextOptions(
             duration: Duration(milliseconds: 80),
             stagger: Duration(milliseconds: 5),
             exitOffset: Duration.zero,
@@ -84,18 +84,18 @@ void main() {
       ),
     );
 
-    expect(find.byKey(const ValueKey('slot_text_rolling')), findsOneWidget);
+    expect(find.byKey(const ValueKey('reel_text_rolling')), findsOneWidget);
 
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('slot_text_settled')), findsOneWidget);
+    expect(find.byKey(const ValueKey('reel_text_settled')), findsOneWidget);
     expect(find.bySemanticsLabel('Copied'), findsOneWidget);
   });
 
   testWidgets('wide glyph changes keep faces unconstrained during roll', (
     tester,
   ) async {
-    const options = SlotTextOptions(
+    const options = ReelTextOptions(
       duration: Duration(milliseconds: 120),
       stagger: Duration.zero,
       exitOffset: Duration.zero,
@@ -106,7 +106,7 @@ void main() {
       const Directionality(
         textDirection: TextDirection.ltr,
         child: Center(
-          child: SlotText(
+          child: ReelText(
             'WWW',
             options: options,
             style: TextStyle(
@@ -123,7 +123,7 @@ void main() {
       const Directionality(
         textDirection: TextDirection.ltr,
         child: Center(
-          child: SlotText(
+          child: ReelText(
             'iii',
             options: options,
             style: TextStyle(
@@ -137,7 +137,7 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 60));
 
-    expect(find.byKey(const ValueKey('slot_text_rolling')), findsOneWidget);
+    expect(find.byKey(const ValueKey('reel_text_rolling')), findsOneWidget);
 
     await tester.pumpAndSettle();
 
@@ -145,7 +145,7 @@ void main() {
       const Directionality(
         textDirection: TextDirection.ltr,
         child: Center(
-          child: SlotText(
+          child: ReelText(
             'WAVY',
             options: options,
             style: TextStyle(
@@ -167,8 +167,8 @@ void main() {
   testWidgets('descenders do not break the outgoing glyph handoff', (
     tester,
   ) async {
-    const options = SlotTextOptions(
-      direction: SlotTextDirection.up,
+    const options = ReelTextOptions(
+      direction: ReelTextDirection.up,
       duration: Duration(milliseconds: 160),
       stagger: Duration.zero,
       exitOffset: Duration(milliseconds: 20),
@@ -179,7 +179,7 @@ void main() {
       const Directionality(
         textDirection: TextDirection.ltr,
         child: Center(
-          child: SlotText(
+          child: ReelText(
             'gyp',
             options: options,
             style: TextStyle(fontSize: 56, fontWeight: FontWeight.w800),
@@ -192,7 +192,7 @@ void main() {
       const Directionality(
         textDirection: TextDirection.ltr,
         child: Center(
-          child: SlotText(
+          child: ReelText(
             'ACE',
             options: options,
             style: TextStyle(fontSize: 56, fontWeight: FontWeight.w800),
@@ -202,7 +202,7 @@ void main() {
     );
 
     await tester.pump(const Duration(milliseconds: 120));
-    expect(find.byKey(const ValueKey('slot_text_rolling')), findsOneWidget);
+    expect(find.byKey(const ValueKey('reel_text_rolling')), findsOneWidget);
 
     await tester.pumpAndSettle();
 
@@ -213,7 +213,7 @@ void main() {
   testWidgets('slot height stays stable before and during a roll', (
     tester,
   ) async {
-    const options = SlotTextOptions(
+    const options = ReelTextOptions(
       duration: Duration(milliseconds: 160),
       stagger: Duration.zero,
       exitOffset: Duration.zero,
@@ -224,25 +224,25 @@ void main() {
       const Directionality(
         textDirection: TextDirection.ltr,
         child: Center(
-          child: SlotText('Copy', options: options, style: textStyle),
+          child: ReelText('Copy', options: options, style: textStyle),
         ),
       ),
     );
-    final settledHeight = tester.getSize(find.byType(SlotText)).height;
+    final settledHeight = tester.getSize(find.byType(ReelText)).height;
 
     await tester.pumpWidget(
       const Directionality(
         textDirection: TextDirection.ltr,
         child: Center(
-          child: SlotText('Copied', options: options, style: textStyle),
+          child: ReelText('Copied', options: options, style: textStyle),
         ),
       ),
     );
     await tester.pump(const Duration(milliseconds: 80));
-    final rollingHeight = tester.getSize(find.byType(SlotText)).height;
+    final rollingHeight = tester.getSize(find.byType(ReelText)).height;
 
     await tester.pumpAndSettle();
-    final finalHeight = tester.getSize(find.byType(SlotText)).height;
+    final finalHeight = tester.getSize(find.byType(ReelText)).height;
 
     expect(rollingHeight, closeTo(settledHeight, 0.01));
     expect(finalHeight, closeTo(settledHeight, 0.01));
@@ -251,7 +251,7 @@ void main() {
   testWidgets('settled width matches final per-glyph animation width', (
     tester,
   ) async {
-    const options = SlotTextOptions(
+    const options = ReelTextOptions(
       duration: Duration(milliseconds: 120),
       stagger: Duration.zero,
       exitOffset: Duration.zero,
@@ -268,7 +268,7 @@ void main() {
       const Directionality(
         textDirection: TextDirection.ltr,
         child: Center(
-          child: SlotText('fit lit', options: options, style: textStyle),
+          child: ReelText('fit lit', options: options, style: textStyle),
         ),
       ),
     );
@@ -277,29 +277,29 @@ void main() {
       const Directionality(
         textDirection: TextDirection.ltr,
         child: Center(
-          child: SlotText('WAVY WWW', options: options, style: textStyle),
+          child: ReelText('WAVY WWW', options: options, style: textStyle),
         ),
       ),
     );
     await tester.pump(const Duration(milliseconds: 180));
-    final lastRollingWidth = tester.getSize(find.byType(SlotText)).width;
+    final lastRollingWidth = tester.getSize(find.byType(ReelText)).width;
 
     await tester.pumpAndSettle();
-    final settledWidth = tester.getSize(find.byType(SlotText)).width;
+    final settledWidth = tester.getSize(find.byType(ReelText)).width;
 
     expect(settledWidth, closeTo(lastRollingWidth, 0.01));
   });
 
   testWidgets('controller set cancels a pending flash revert', (tester) async {
-    final controller = SlotTextController(initialText: 'Copy');
+    final controller = ReelTextController(initialText: 'Copy');
     addTearDown(controller.dispose);
 
     await tester.pumpWidget(
       Directionality(
         textDirection: TextDirection.ltr,
-        child: SlotText.controller(
+        child: ReelText.controller(
           controller: controller,
-          options: const SlotTextOptions(
+          options: const ReelTextOptions(
             duration: Duration(milliseconds: 40),
             stagger: Duration.zero,
             exitOffset: Duration.zero,
@@ -310,10 +310,10 @@ void main() {
 
     controller.flash(
       'Copied',
-      options: const SlotTextFlashOptions(
+      options: const ReelTextFlashOptions(
         revertAfter: Duration(milliseconds: 200),
-        enter: SlotTextOptions(duration: Duration(milliseconds: 40)),
-        exit: SlotTextOptions(duration: Duration(milliseconds: 40)),
+        enter: ReelTextOptions(duration: Duration(milliseconds: 40)),
+        exit: ReelTextOptions(duration: Duration(milliseconds: 40)),
       ),
     );
     await tester.pump();
@@ -333,15 +333,15 @@ void main() {
   testWidgets('flash reverts to the original resting text after last flash', (
     tester,
   ) async {
-    final controller = SlotTextController(initialText: 'Copy');
+    final controller = ReelTextController(initialText: 'Copy');
     addTearDown(controller.dispose);
 
     await tester.pumpWidget(
       Directionality(
         textDirection: TextDirection.ltr,
-        child: SlotText.controller(
+        child: ReelText.controller(
           controller: controller,
-          options: const SlotTextOptions(
+          options: const ReelTextOptions(
             duration: Duration(milliseconds: 30),
             stagger: Duration.zero,
             exitOffset: Duration.zero,
@@ -352,14 +352,14 @@ void main() {
 
     controller.flash(
       'Copied',
-      options: const SlotTextFlashOptions(
+      options: const ReelTextFlashOptions(
         revertAfter: Duration(milliseconds: 100),
       ),
     );
     await tester.pump(const Duration(milliseconds: 50));
     controller.flash(
       'Copied again',
-      options: const SlotTextFlashOptions(
+      options: const ReelTextFlashOptions(
         revertAfter: Duration(milliseconds: 100),
       ),
     );
@@ -375,15 +375,15 @@ void main() {
   });
 
   testWidgets('progress keeps rolling until completed', (tester) async {
-    final controller = SlotTextController(initialText: 'Export');
+    final controller = ReelTextController(initialText: 'Export');
     addTearDown(controller.dispose);
 
     await tester.pumpWidget(
       Directionality(
         textDirection: TextDirection.ltr,
-        child: SlotText.controller(
+        child: ReelText.controller(
           controller: controller,
-          options: const SlotTextOptions(
+          options: const ReelTextOptions(
             duration: Duration(milliseconds: 20),
             stagger: Duration.zero,
             exitOffset: Duration.zero,
@@ -396,7 +396,7 @@ void main() {
       'Exporter',
       frames: const ['Exported'],
       interval: const Duration(milliseconds: 70),
-      options: const SlotTextOptions(duration: Duration(milliseconds: 20)),
+      options: const ReelTextOptions(duration: Duration(milliseconds: 20)),
     );
     await tester.pump();
 
@@ -409,7 +409,7 @@ void main() {
 
     progress.complete(
       'Exported',
-      options: const SlotTextOptions(color: Color(0xff38bdf8)),
+      options: const ReelTextOptions(color: Color(0xff38bdf8)),
     );
     await tester.pumpAndSettle();
 
@@ -419,15 +419,15 @@ void main() {
   });
 
   testWidgets('set cancels an active progress loop', (tester) async {
-    final controller = SlotTextController(initialText: 'Export');
+    final controller = ReelTextController(initialText: 'Export');
     addTearDown(controller.dispose);
 
     await tester.pumpWidget(
       Directionality(
         textDirection: TextDirection.ltr,
-        child: SlotText.controller(
+        child: ReelText.controller(
           controller: controller,
-          options: const SlotTextOptions(
+          options: const ReelTextOptions(
             duration: Duration(milliseconds: 20),
             stagger: Duration.zero,
             exitOffset: Duration.zero,
@@ -439,7 +439,7 @@ void main() {
     final progress = controller.startProgress(
       'Exporter',
       interval: const Duration(milliseconds: 60),
-      options: const SlotTextOptions(duration: Duration(milliseconds: 20)),
+      options: const ReelTextOptions(duration: Duration(milliseconds: 20)),
     );
     await tester.pump();
 
@@ -453,14 +453,14 @@ void main() {
   });
 
   testWidgets('startWaiting ellipsis cycles trailing dots', (tester) async {
-    final controller = SlotTextController(initialText: 'Load');
+    final controller = ReelTextController(initialText: 'Load');
     addTearDown(controller.dispose);
     final seen = <String>[];
     controller.addListener(() => seen.add(controller.value));
 
     final handle = controller.startWaiting(
       'Load',
-      waiting: const SlotWaiting.ellipsis(step: Duration(milliseconds: 100)),
+      waiting: const ReelWaiting.ellipsis(step: Duration(milliseconds: 100)),
     );
 
     await tester.pump(const Duration(milliseconds: 450));
@@ -478,15 +478,15 @@ void main() {
   testWidgets('startWaiting wave periodically re-rolls the same label', (
     tester,
   ) async {
-    final controller = SlotTextController(initialText: 'Sync');
+    final controller = ReelTextController(initialText: 'Sync');
     addTearDown(controller.dispose);
     var emits = 0;
     controller.addListener(() => emits++);
 
     final handle = controller.startWaiting(
       'Sync',
-      waiting: const SlotWaiting.wave(rest: Duration(milliseconds: 200)),
-      options: const SlotTextOptions(
+      waiting: const ReelWaiting.wave(rest: Duration(milliseconds: 200)),
+      options: const ReelTextOptions(
         duration: Duration(milliseconds: 100),
         stagger: Duration(milliseconds: 10),
         exitOffset: Duration.zero,
@@ -508,14 +508,14 @@ void main() {
   testWidgets('startWaiting builder generates one frame per tick', (
     tester,
   ) async {
-    final controller = SlotTextController(initialText: 'Go');
+    final controller = ReelTextController(initialText: 'Go');
     addTearDown(controller.dispose);
     final seen = <String>[];
     controller.addListener(() => seen.add(controller.value));
 
     final handle = controller.startWaiting(
       'Go',
-      waiting: SlotWaiting.builder(
+      waiting: ReelWaiting.builder(
         (text, tick) => '$text$tick',
         step: const Duration(milliseconds: 50),
       ),
@@ -539,7 +539,7 @@ void main() {
         data: const MediaQueryData(disableAnimations: true),
         child: Directionality(
           textDirection: TextDirection.ltr,
-          child: SlotText(text),
+          child: ReelText(text),
         ),
       );
     }
@@ -548,8 +548,8 @@ void main() {
     await tester.pumpWidget(wrap('Copied'));
     await tester.pump();
 
-    expect(find.byKey(const ValueKey('slot_text_rolling')), findsNothing);
-    expect(find.byKey(const ValueKey('slot_text_settled')), findsOneWidget);
+    expect(find.byKey(const ValueKey('reel_text_rolling')), findsNothing);
+    expect(find.byKey(const ValueKey('reel_text_settled')), findsOneWidget);
     expect(find.bySemanticsLabel('Copied'), findsOneWidget);
   });
 
@@ -561,10 +561,10 @@ void main() {
         data: const MediaQueryData(disableAnimations: true),
         child: Directionality(
           textDirection: TextDirection.ltr,
-          child: SlotText(
+          child: ReelText(
             text,
             respectDisableAnimations: false,
-            options: const SlotTextOptions(
+            options: const ReelTextOptions(
               duration: Duration(milliseconds: 60),
               stagger: Duration.zero,
               exitOffset: Duration.zero,
@@ -578,7 +578,7 @@ void main() {
     await tester.pumpWidget(wrap('Copied'));
     await tester.pump(const Duration(milliseconds: 20));
 
-    expect(find.byKey(const ValueKey('slot_text_rolling')), findsOneWidget);
+    expect(find.byKey(const ValueKey('reel_text_rolling')), findsOneWidget);
 
     await tester.pumpAndSettle();
     expect(find.bySemanticsLabel('Copied'), findsOneWidget);

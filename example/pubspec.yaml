@@ -1,5 +1,5 @@
-name: slot_text_example
-description: Example app for the slot_text package.
+name: reel_text_example
+description: Example app for the reel_text package.
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -10,7 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   google_fonts: ^8.1.0
-  slot_text:
+  reel_text:
     path: ..
   url_launcher: ^6.3.2
 

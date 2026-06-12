@@ -1,10 +1,10 @@
-# slot_text example
+# reel_text example
 
-Interactive Flutter example for the `slot_text` package.
+Interactive Flutter example for the `reel_text` package.
 
 It demonstrates:
 
-- Imperative `SlotTextController.flash()` button feedback.
+- Imperative `ReelTextController.flash()` button feedback.
 - Declarative text updates.
 - Numeric counter rolls.
 - Direction, chromatic color, and duration controls.

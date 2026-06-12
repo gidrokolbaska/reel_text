@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:slot_text/slot_text.dart';
+import 'package:reel_text/reel_text.dart';
 
 import 'studio.dart';
 
@@ -27,15 +27,15 @@ class _ShowcasePageState extends State<ShowcasePage> {
   static const _heroWords = ['CRAFT', 'DRAFT', 'DRIFT', 'SHIFT', 'SWIFT'];
   static const _scrambleSet = 'abcdefghijklmnopqrstuvwxyz';
 
-  late final SlotTextController _hero;
-  late final SlotTextController _ellipsis;
-  late final SlotTextController _wave;
-  late final SlotTextController _scramble;
-  late final SlotTextController _operation;
-  late final SlotTextController _copy;
+  late final ReelTextController _hero;
+  late final ReelTextController _ellipsis;
+  late final ReelTextController _wave;
+  late final ReelTextController _scramble;
+  late final ReelTextController _operation;
+  late final ReelTextController _copy;
 
   Timer? _heroTimer;
-  SlotTextProgress? _operationHandle;
+  ReelTextProgress? _operationHandle;
   _Phase _phase = _Phase.idle;
   int _heroIndex = 0;
   int _count = 1024;
@@ -47,25 +47,25 @@ class _ShowcasePageState extends State<ShowcasePage> {
   @override
   void initState() {
     super.initState();
-    _hero = SlotTextController(initialText: _heroWords.first);
-    _ellipsis = SlotTextController(initialText: 'Loading');
-    _wave = SlotTextController(initialText: 'Syncing');
-    _scramble = SlotTextController(initialText: 'Thinking');
-    _operation = SlotTextController(initialText: 'Export');
-    _copy = SlotTextController(initialText: 'Copy');
+    _hero = ReelTextController(initialText: _heroWords.first);
+    _ellipsis = ReelTextController(initialText: 'Loading');
+    _wave = ReelTextController(initialText: 'Syncing');
+    _scramble = ReelTextController(initialText: 'Thinking');
+    _operation = ReelTextController(initialText: 'Export');
+    _copy = ReelTextController(initialText: 'Copy');
 
     _heroTimer = Timer.periodic(const Duration(milliseconds: 2400), (_) {
       _heroIndex = (_heroIndex + 1) % _heroWords.length;
       _hero.set(
         _heroWords[_heroIndex],
-        options: SlotTextOptions(
+        options: ReelTextOptions(
           duration: const Duration(milliseconds: 460),
           stagger: const Duration(milliseconds: 58),
           exitOffset: const Duration(milliseconds: 66),
           bounce: 0.6,
           direction: _heroIndex.isEven
-              ? SlotTextDirection.up
-              : SlotTextDirection.down,
+              ? ReelTextDirection.up
+              : ReelTextDirection.down,
           colorBuilder: chromatic(
             from: 70.0 + _heroIndex * 54,
             spread: 130,
@@ -83,10 +83,10 @@ class _ShowcasePageState extends State<ShowcasePage> {
     // ellipsis and wave run on their designed default motion — what you get
     // out of the box with `controller.startWaiting(text)`.
     _ellipsis.startWaiting('Loading');
-    _wave.startWaiting('Syncing', waiting: const SlotWaiting.wave());
+    _wave.startWaiting('Syncing', waiting: const ReelWaiting.wave());
     _scramble.startWaiting(
       'Thinking',
-      waiting: SlotWaiting.builder((text, tick) {
+      waiting: ReelWaiting.builder((text, tick) {
         if (tick % 4 == 0) {
           return text;
         }
@@ -98,7 +98,7 @@ class _ShowcasePageState extends State<ShowcasePage> {
         }
         return chars.join();
       }),
-      options: const SlotTextOptions(
+      options: const ReelTextOptions(
         duration: Duration(milliseconds: 230),
         stagger: Duration(milliseconds: 26),
         exitOffset: Duration(milliseconds: 36),
@@ -121,9 +121,9 @@ class _ShowcasePageState extends State<ShowcasePage> {
     super.dispose();
   }
 
-  SlotTextOptions get _deskOptions {
-    return SlotTextOptions(
-      direction: _directionUp ? SlotTextDirection.up : SlotTextDirection.down,
+  ReelTextOptions get _deskOptions {
+    return ReelTextOptions(
+      direction: _directionUp ? ReelTextDirection.up : ReelTextDirection.down,
       duration: Duration(milliseconds: _speed.round()),
       stagger: const Duration(milliseconds: 38),
       exitOffset: const Duration(milliseconds: 44),
@@ -135,7 +135,7 @@ class _ShowcasePageState extends State<ShowcasePage> {
     );
   }
 
-  SlotTextOptions _toneOptions(Color color) {
+  ReelTextOptions _toneOptions(Color color) {
     return _deskOptions.copyWith(clearColor: true, color: color);
   }
 
@@ -148,7 +148,7 @@ class _ShowcasePageState extends State<ShowcasePage> {
     setState(() => _phase = _Phase.waiting);
     _operationHandle = _operation.startWaiting(
       'Exporting',
-      options: const SlotTextOptions(
+      options: const ReelTextOptions(
         duration: Duration(milliseconds: 240),
         stagger: Duration(milliseconds: 34),
         exitOffset: Duration(milliseconds: 40),
@@ -231,8 +231,8 @@ class _ShowcasePageState extends State<ShowcasePage> {
                     // the motion itself tells you which way the value moved.
                     options: _deskOptions.copyWith(
                       direction: _countUp
-                          ? SlotTextDirection.up
-                          : SlotTextDirection.down,
+                          ? ReelTextDirection.up
+                          : ReelTextDirection.down,
                     ),
                     onIncrement: () => setState(() {
                       _count += 1;
@@ -273,7 +273,7 @@ class _ShowcasePageState extends State<ShowcasePage> {
                 const SizedBox(height: 28),
                 Center(
                   child: Text(
-                    'slot_text · MIT',
+                    'reel_text · MIT',
                     style: Studio.mono(
                       size: 10.5,
                       color: Studio.faint,
@@ -315,7 +315,7 @@ class _ShowcasePageState extends State<ShowcasePage> {
 class _Hero extends StatelessWidget {
   const _Hero({required this.controller, required this.compact});
 
-  final SlotTextController controller;
+  final ReelTextController controller;
   final bool compact;
 
   @override
@@ -344,7 +344,7 @@ class _Hero extends StatelessWidget {
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
-                  child: SlotText.controller(
+                  child: ReelText.controller(
                     controller: controller,
                     style: Studio.display(
                       size: compact ? 68 : 116,
@@ -432,10 +432,10 @@ class _LiveClockState extends State<_LiveClock> {
 
   @override
   Widget build(BuildContext context) {
-    return SlotText(
+    return ReelText(
       _time,
-      options: const SlotTextOptions(
-        direction: SlotTextDirection.up,
+      options: const ReelTextOptions(
+        direction: ReelTextDirection.up,
         duration: Duration(milliseconds: 300),
         stagger: Duration(milliseconds: 30),
         exitOffset: Duration(milliseconds: 36),
@@ -459,28 +459,28 @@ class _IdleTrio extends StatelessWidget {
   });
 
   final bool compact;
-  final SlotTextController ellipsis;
-  final SlotTextController wave;
-  final SlotTextController scramble;
+  final ReelTextController ellipsis;
+  final ReelTextController wave;
+  final ReelTextController scramble;
 
   @override
   Widget build(BuildContext context) {
     final cards = [
       _IdleCard(
         title: 'ellipsis',
-        signature: 'SlotWaiting.ellipsis()',
+        signature: 'ReelWaiting.ellipsis()',
         accent: Studio.lime,
         controller: ellipsis,
       ),
       _IdleCard(
         title: 'wave',
-        signature: 'SlotWaiting.wave()',
+        signature: 'ReelWaiting.wave()',
         accent: Studio.sky,
         controller: wave,
       ),
       _IdleCard(
         title: 'builder',
-        signature: 'SlotWaiting.builder(...)',
+        signature: 'ReelWaiting.builder(...)',
         accent: Studio.violet,
         controller: scramble,
       ),
@@ -518,7 +518,7 @@ class _IdleCard extends StatelessWidget {
   final String title;
   final String signature;
   final Color accent;
-  final SlotTextController controller;
+  final ReelTextController controller;
 
   @override
   Widget build(BuildContext context) {
@@ -558,7 +558,7 @@ class _IdleCard extends StatelessWidget {
               height: 92,
               width: double.infinity,
               child: Center(
-                child: SlotText.controller(
+                child: ReelText.controller(
                   controller: controller,
                   style: Studio.display(size: 23, letterSpacing: 0),
                 ),
@@ -689,8 +689,8 @@ class _BoardRow extends StatelessWidget {
         : data.up
         ? Studio.lime
         : Studio.rose;
-    final options = SlotTextOptions(
-      direction: data.up ? SlotTextDirection.up : SlotTextDirection.down,
+    final options = ReelTextOptions(
+      direction: data.up ? ReelTextDirection.up : ReelTextDirection.down,
       duration: const Duration(milliseconds: 320),
       stagger: const Duration(milliseconds: 26),
       exitOffset: const Duration(milliseconds: 38),
@@ -712,7 +712,7 @@ class _BoardRow extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: SlotText(
+          child: ReelText(
             fmt(data.price),
             options: options,
             style: Studio.mono(
@@ -728,7 +728,7 @@ class _BoardRow extends StatelessWidget {
           width: 76,
           child: Align(
             alignment: Alignment.centerRight,
-            child: SlotText(
+            child: ReelText(
               data.deltaPct == 0
                   ? '--'
                   : '${data.up ? '+' : '-'}'
@@ -761,7 +761,7 @@ class _OperationPanel extends StatelessWidget {
     required this.onReset,
   });
 
-  final SlotTextController controller;
+  final ReelTextController controller;
   final _Phase phase;
   final VoidCallback onStart;
   final VoidCallback onComplete;
@@ -797,7 +797,7 @@ class _OperationPanel extends StatelessWidget {
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
-            child: SlotText.controller(
+            child: ReelText.controller(
               controller: controller,
               style: Studio.display(size: 46, letterSpacing: 0),
             ),
@@ -863,10 +863,10 @@ class _PhaseChip extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: 0.34)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      child: SlotText(
+      child: ReelText(
         label,
-        options: SlotTextOptions(
-          direction: SlotTextDirection.up,
+        options: ReelTextOptions(
+          direction: ReelTextDirection.up,
           duration: const Duration(milliseconds: 240),
           stagger: const Duration(milliseconds: 22),
           exitOffset: const Duration(milliseconds: 30),
@@ -898,7 +898,7 @@ class _CounterPanel extends StatelessWidget {
   });
 
   final int count;
-  final SlotTextOptions options;
+  final ReelTextOptions options;
   final VoidCallback onIncrement;
   final VoidCallback onDecrement;
   final VoidCallback onJump;
@@ -927,7 +927,7 @@ class _CounterPanel extends StatelessWidget {
               height: 110,
               width: double.infinity,
               child: Center(
-                child: SlotText(
+                child: ReelText(
                   // Default skipUnchanged: true — only digits that actually
                   // change roll; the rest of the number stays planted.
                   '$count',
@@ -998,8 +998,8 @@ class _MotionDesk extends StatelessWidget {
   final bool directionUp;
   final double speed;
   final _ColorMode colorMode;
-  final SlotTextController copyController;
-  final SlotTextOptions copyOptions;
+  final ReelTextController copyController;
+  final ReelTextOptions copyOptions;
   final ValueChanged<bool> onDirectionChanged;
   final ValueChanged<double> onSpeedChanged;
   final ValueChanged<_ColorMode> onColorModeChanged;
@@ -1018,10 +1018,10 @@ class _MotionDesk extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Only the digits roll; the unit is a plain static label.
-                  SlotText(
+                  ReelText(
                     '${speed.round()}',
-                    options: const SlotTextOptions(
-                      direction: SlotTextDirection.up,
+                    options: const ReelTextOptions(
+                      direction: ReelTextDirection.up,
                       duration: Duration(milliseconds: 160),
                       stagger: Duration(milliseconds: 14),
                     ),
@@ -1081,19 +1081,19 @@ class _MotionDesk extends StatelessWidget {
               onPressed: () {
                 copyController.flash(
                   'Copied',
-                  options: SlotTextFlashOptions(
+                  options: ReelTextFlashOptions(
                     enter: copyOptions,
                     exit: copyOptions.copyWith(
                       clearColor: true,
-                      direction: copyOptions.direction == SlotTextDirection.up
-                          ? SlotTextDirection.down
-                          : SlotTextDirection.up,
+                      direction: copyOptions.direction == ReelTextDirection.up
+                          ? ReelTextDirection.down
+                          : ReelTextDirection.up,
                     ),
                   ),
                 );
               },
               icon: Icons.copy_rounded,
-              child: SlotText.controller(
+              child: ReelText.controller(
                 controller: copyController,
                 options: copyOptions,
                 style: Studio.mono(

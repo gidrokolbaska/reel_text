@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:slot_text/slot_text.dart';
+import 'package:reel_text/reel_text.dart';
 
 import 'code_view.dart';
 import 'studio.dart';
@@ -68,7 +68,7 @@ class RecipesPage extends StatelessWidget {
       const _RecipeCard(
         title: 'Reduced motion',
         blurb:
-            'When the platform asks for reduced motion, SlotText snaps to '
+            'When the platform asks for reduced motion, ReelText snaps to '
             'the target instantly. Toggle the simulation to verify.',
         preview: _ReducedMotionPreview(),
         code: _reducedMotionCode,
@@ -155,10 +155,10 @@ class _RecipeCard extends StatelessWidget {
 const _declarativeCode = '''
 bool saved = false;
 
-SlotText(
+ReelText(
   saved ? 'Saved' : 'Save',
-  options: const SlotTextOptions(
-    direction: SlotTextDirection.up,
+  options: const ReelTextOptions(
+    direction: ReelTextDirection.up,
   ),
   style: const TextStyle(fontSize: 24),
 );
@@ -181,9 +181,9 @@ class _DeclarativePreviewState extends State<_DeclarativePreview> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SlotText(
+        ReelText(
           _saved ? 'Saved' : 'Save',
-          options: const SlotTextOptions(direction: SlotTextDirection.up),
+          options: const ReelTextOptions(direction: ReelTextDirection.up),
           style: Studio.display(size: 26, letterSpacing: 0),
         ),
         const SizedBox(height: 16),
@@ -202,19 +202,19 @@ class _DeclarativePreviewState extends State<_DeclarativePreview> {
 // ---------------------------------------------------------------------------
 
 const _flashCode = '''
-final label = SlotTextController(initialText: 'Copy');
+final label = ReelTextController(initialText: 'Copy');
 
 // In build:
-SlotText.controller(controller: label);
+ReelText.controller(controller: label);
 
 // On tap:
 label.flash(
   'Copied',
-  options: SlotTextFlashOptions(
+  options: ReelTextFlashOptions(
     revertAfter: const Duration(milliseconds: 1400),
-    enter: SlotTextOptions(colorBuilder: chromatic()),
-    exit: const SlotTextOptions(
-      direction: SlotTextDirection.down,
+    enter: ReelTextOptions(colorBuilder: chromatic()),
+    exit: const ReelTextOptions(
+      direction: ReelTextDirection.down,
     ),
   ),
 );''';
@@ -227,12 +227,12 @@ class _FlashPreview extends StatefulWidget {
 }
 
 class _FlashPreviewState extends State<_FlashPreview> {
-  late final SlotTextController _label;
+  late final ReelTextController _label;
 
   @override
   void initState() {
     super.initState();
-    _label = SlotTextController(initialText: 'Copy');
+    _label = ReelTextController(initialText: 'Copy');
   }
 
   @override
@@ -247,14 +247,14 @@ class _FlashPreviewState extends State<_FlashPreview> {
       onPressed: () {
         _label.flash(
           'Copied',
-          options: SlotTextFlashOptions(
-            enter: SlotTextOptions(colorBuilder: chromatic()),
-            exit: const SlotTextOptions(direction: SlotTextDirection.down),
+          options: ReelTextFlashOptions(
+            enter: ReelTextOptions(colorBuilder: chromatic()),
+            exit: const ReelTextOptions(direction: ReelTextDirection.down),
           ),
         );
       },
       icon: Icons.copy_rounded,
-      child: SlotText.controller(
+      child: ReelText.controller(
         controller: _label,
         style: Studio.mono(
           size: 12.5,
@@ -272,8 +272,8 @@ class _FlashPreviewState extends State<_FlashPreview> {
 // ---------------------------------------------------------------------------
 
 const _asyncCode = '''
-final label = SlotTextController(initialText: 'Export');
-SlotTextProgress? handle;
+final label = ReelTextController(initialText: 'Export');
+ReelTextProgress? handle;
 
 Future<void> export() async {
   // Spam-safe: re-taps while waiting do not restart the loop.
@@ -297,14 +297,14 @@ class _AsyncPreview extends StatefulWidget {
 }
 
 class _AsyncPreviewState extends State<_AsyncPreview> {
-  late final SlotTextController _label;
+  late final ReelTextController _label;
   Timer? _finish;
   bool _running = false;
 
   @override
   void initState() {
     super.initState();
-    _label = SlotTextController(initialText: 'Export');
+    _label = ReelTextController(initialText: 'Export');
   }
 
   @override
@@ -319,18 +319,18 @@ class _AsyncPreviewState extends State<_AsyncPreview> {
     setState(() => _running = true);
     final handle = _label.startWaiting(
       'Exporting',
-      options: const SlotTextOptions(color: Studio.amber),
+      options: const ReelTextOptions(color: Studio.amber),
     );
     _finish = Timer(const Duration(milliseconds: 2600), () {
       if (succeed) {
         handle.complete(
           'Exported',
-          options: const SlotTextOptions(color: Studio.lime),
+          options: const ReelTextOptions(color: Studio.lime),
         );
       } else {
         handle.fail(
           'Failed',
-          options: const SlotTextOptions(color: Studio.rose),
+          options: const ReelTextOptions(color: Studio.rose),
         );
       }
       if (mounted) {
@@ -344,7 +344,7 @@ class _AsyncPreviewState extends State<_AsyncPreview> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SlotText.controller(
+        ReelText.controller(
           controller: _label,
           style: Studio.display(size: 24, letterSpacing: 0),
         ),
@@ -378,18 +378,18 @@ class _AsyncPreviewState extends State<_AsyncPreview> {
 
 const _waitingCode = '''
 // Trailing dots: Sync -> Sync. -> Sync.. -> Sync...
-label.startWaiting('Sync', waiting: const SlotWaiting.ellipsis());
+label.startWaiting('Sync', waiting: const ReelWaiting.ellipsis());
 
 // The word breathes: a stagger wave sweeps the glyphs, then rests.
 label.startWaiting(
   'Sync',
-  waiting: const SlotWaiting.wave(rest: Duration(milliseconds: 900)),
+  waiting: const ReelWaiting.wave(rest: Duration(milliseconds: 900)),
 );
 
 // Full control: generate any frame per tick.
 label.startWaiting(
   'Sync',
-  waiting: SlotWaiting.builder((text, tick) {
+  waiting: ReelWaiting.builder((text, tick) {
     final r = math.Random(tick);
     return tick % 4 == 0
         ? text
@@ -407,13 +407,13 @@ class _WaitingPreview extends StatefulWidget {
 }
 
 class _WaitingPreviewState extends State<_WaitingPreview> {
-  late final SlotTextController _label;
+  late final ReelTextController _label;
   _WaitingKind _kind = _WaitingKind.ellipsis;
 
   @override
   void initState() {
     super.initState();
-    _label = SlotTextController(initialText: 'Sync');
+    _label = ReelTextController(initialText: 'Sync');
     _start();
   }
 
@@ -428,21 +428,21 @@ class _WaitingPreviewState extends State<_WaitingPreview> {
       case _WaitingKind.ellipsis:
         _label.startWaiting(
           'Sync',
-          waiting: const SlotWaiting.ellipsis(),
-          options: const SlotTextOptions(color: Studio.lime),
+          waiting: const ReelWaiting.ellipsis(),
+          options: const ReelTextOptions(color: Studio.lime),
         );
       case _WaitingKind.wave:
         _label.startWaiting(
           'Sync',
-          waiting: const SlotWaiting.wave(rest: Duration(milliseconds: 900)),
-          options: SlotTextOptions(
+          waiting: const ReelWaiting.wave(rest: Duration(milliseconds: 900)),
+          options: ReelTextOptions(
             colorBuilder: chromatic(from: 190, spread: 70),
           ),
         );
       case _WaitingKind.builder:
         _label.startWaiting(
           'Sync',
-          waiting: SlotWaiting.builder((text, tick) {
+          waiting: ReelWaiting.builder((text, tick) {
             if (tick % 4 == 0) {
               return text;
             }
@@ -450,7 +450,7 @@ class _WaitingPreviewState extends State<_WaitingPreview> {
             const set = 'abcdefghijklmnopqrstuvwxyz';
             return text.substring(0, 3) + set[r.nextInt(set.length)];
           }, step: const Duration(milliseconds: 280)),
-          options: const SlotTextOptions(color: Studio.violet),
+          options: const ReelTextOptions(color: Studio.violet),
         );
     }
   }
@@ -463,7 +463,7 @@ class _WaitingPreviewState extends State<_WaitingPreview> {
         SizedBox(
           height: 56,
           child: Center(
-            child: SlotText.controller(
+            child: ReelText.controller(
               controller: _label,
               style: Studio.display(size: 22, letterSpacing: 0),
             ),
@@ -496,12 +496,12 @@ const _counterCode = r'''
 int count = 1024;
 bool up = true;
 
-SlotText(
+ReelText(
   '$count',
   // Only changed digits roll (skipUnchanged: true is the
   // default). Direction follows the delta.
-  options: SlotTextOptions(
-    direction: up ? SlotTextDirection.up : SlotTextDirection.down,
+  options: ReelTextOptions(
+    direction: up ? ReelTextDirection.up : ReelTextDirection.down,
   ),
   style: const TextStyle(
     fontSize: 40,
@@ -530,10 +530,10 @@ class _CounterPreviewState extends State<_CounterPreview> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SlotText(
+        ReelText(
           '$_count',
-          options: SlotTextOptions(
-            direction: _up ? SlotTextDirection.up : SlotTextDirection.down,
+          options: ReelTextOptions(
+            direction: _up ? ReelTextDirection.up : ReelTextDirection.down,
           ),
           style: Studio.mono(
             size: 40,
@@ -581,14 +581,14 @@ class _CounterPreviewState extends State<_CounterPreview> {
 // ---------------------------------------------------------------------------
 
 const _spamSafeCode = '''
-final label = SlotTextController(initialText: 'Like');
+final label = ReelTextController(initialText: 'Like');
 var liked = false;
 
 // On every tap — even very fast ones:
 liked = !liked;
 label.set(
   liked ? 'Liked' : 'Like',
-  options: const SlotTextOptions(
+  options: const ReelTextOptions(
     interrupt: false, // finish the roll, play only the latest
   ),
 );''';
@@ -601,13 +601,13 @@ class _SpamSafePreview extends StatefulWidget {
 }
 
 class _SpamSafePreviewState extends State<_SpamSafePreview> {
-  late final SlotTextController _label;
+  late final ReelTextController _label;
   bool _liked = false;
 
   @override
   void initState() {
     super.initState();
-    _label = SlotTextController(initialText: 'Like');
+    _label = ReelTextController(initialText: 'Like');
   }
 
   @override
@@ -623,12 +623,12 @@ class _SpamSafePreviewState extends State<_SpamSafePreview> {
         _liked = !_liked;
         _label.set(
           _liked ? 'Liked' : 'Like',
-          options: const SlotTextOptions(interrupt: false),
+          options: const ReelTextOptions(interrupt: false),
         );
       },
       accent: Studio.rose,
       icon: Icons.favorite_rounded,
-      child: SlotText.controller(
+      child: ReelText.controller(
         controller: _label,
         style: Studio.mono(
           size: 12.5,
@@ -647,14 +647,14 @@ class _SpamSafePreviewState extends State<_SpamSafePreview> {
 
 const _reducedMotionCode = '''
 // Default: when MediaQuery.disableAnimationsOf(context) is true,
-// SlotText snaps to the target text without rolling.
-SlotText(
+// ReelText snaps to the target text without rolling.
+ReelText(
   status,
   respectDisableAnimations: true, // the default
 );
 
 // Opt out if the roll is essential to your design:
-SlotText(status, respectDisableAnimations: false);''';
+ReelText(status, respectDisableAnimations: false);''';
 
 class _ReducedMotionPreview extends StatefulWidget {
   const _ReducedMotionPreview();
@@ -675,7 +675,7 @@ class _ReducedMotionPreviewState extends State<_ReducedMotionPreview> {
       children: [
         MediaQuery(
           data: media.copyWith(disableAnimations: _reduced),
-          child: SlotText(
+          child: ReelText(
             _on ? 'Online' : 'Offline',
             style: Studio.display(size: 22, letterSpacing: 0),
           ),

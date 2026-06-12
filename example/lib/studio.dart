@@ -35,9 +35,7 @@ abstract final class Studio {
       letterSpacing: letterSpacing,
       fontWeight: FontWeight.w900,
     );
-    return fontsEnabled
-        ? GoogleFonts.archivoBlack(textStyle: style)
-        : style;
+    return fontsEnabled ? GoogleFonts.archivoBlack(textStyle: style) : style;
   }
 
   /// Technical face: Space Mono — captions, numbers, code.
@@ -66,7 +64,12 @@ abstract final class Studio {
     double height = 1.55,
     FontWeight weight = FontWeight.w400,
   }) {
-    return TextStyle(color: color, fontSize: size, height: height, fontWeight: weight);
+    return TextStyle(
+      color: color,
+      fontSize: size,
+      height: height,
+      fontWeight: weight,
+    );
   }
 }
 

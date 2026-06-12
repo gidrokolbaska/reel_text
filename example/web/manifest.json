@@ -1,6 +1,6 @@
 {
-    "name": "slot_text_example",
-    "short_name": "slot_text_example",
+    "name": "reel_text_example",
+    "short_name": "reel_text_example",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

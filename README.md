@@ -1,44 +1,44 @@
-# slot_text
+# reel_text
 
 Dependency-light Flutter text roll animation for short labels, counters, status
 text, and command buttons.
 
-`slot_text` is a Flutter analogue of the DOM-oriented
-[`slot-text`](https://github.com/Danilaa1/slot-text): every glyph gets its own
-measured slot, changed glyphs slide vertically, optional color flashes fade back
-to the inherited text color, and imperative `flash()` calls are safe for rapid
-button taps.
+`reel_text` brings the DOM text-roll idea from
+[Danilaa1's original package](https://github.com/Danilaa1/slot-text) to
+Flutter: every glyph gets its own measured slot, changed glyphs slide
+vertically, optional color flashes fade back to the inherited text color, and
+imperative `flash()` calls are safe for rapid button taps.
 
-![slot_text showcase](assets/showcase.webp)
+![reel_text showcase](assets/showcase.webp)
 
-[Live demo](https://kicknext.github.io/slot_text/)
+[Live demo](https://kicknext.github.io/reel_text/)
 
 ## Install
 
 ```yaml
 dependencies:
-  slot_text: ^0.0.1
+  reel_text: ^0.0.1
 ```
 
 ## Quick Start
 
 ```dart
-import 'package:slot_text/slot_text.dart';
+import 'package:reel_text/reel_text.dart';
 
-const SlotText('Copy');
+const ReelText('Copy');
 ```
 
 For the classic `Copy -> Copied -> Copy` interaction:
 
 ```dart
-final controller = SlotTextController(initialText: 'Copy');
+final controller = ReelTextController(initialText: 'Copy');
 
-SlotText.controller(controller: controller);
+ReelText.controller(controller: controller);
 
 controller.flash(
   'Copied',
-  options: SlotTextFlashOptions(
-    enter: SlotTextOptions(colorBuilder: chromatic()),
+  options: ReelTextFlashOptions(
+    enter: ReelTextOptions(colorBuilder: chromatic()),
   ),
 );
 ```
@@ -48,10 +48,10 @@ controller.flash(
 ### Declarative
 
 ```dart
-SlotText(
+ReelText(
   copied ? 'Copied' : 'Copy',
-  options: SlotTextOptions(
-    direction: copied ? SlotTextDirection.up : SlotTextDirection.down,
+  options: ReelTextOptions(
+    direction: copied ? ReelTextDirection.up : ReelTextDirection.down,
     colorBuilder: copied ? chromatic() : null,
   ),
 );
@@ -60,12 +60,12 @@ SlotText(
 ### Imperative
 
 ```dart
-final label = SlotTextController(initialText: 'Copy');
+final label = ReelTextController(initialText: 'Copy');
 
 label.set('Copied');
 label.set(
   'Copy',
-  options: const SlotTextOptions(direction: SlotTextDirection.down),
+  options: const ReelTextOptions(direction: ReelTextDirection.down),
 );
 label.flash('Copied');
 label.dispose();
@@ -78,25 +78,25 @@ Calling `set()` cancels a pending revert.
 For async operations, use `startProgress()` and resolve the returned handle:
 
 ```dart
-final exportLabel = SlotTextController(initialText: 'Export');
+final exportLabel = ReelTextController(initialText: 'Export');
 
 final progress = exportLabel.startProgress(
   'Exportaa',
   frames: const ['Exportee', 'Exportii', 'Exportoo'],
   interval: const Duration(milliseconds: 160),
-  options: SlotTextOptions(colorBuilder: chromatic(from: 36, spread: 54)),
+  options: ReelTextOptions(colorBuilder: chromatic(from: 36, spread: 54)),
 );
 
 try {
   await exportFile();
   progress.complete(
     'Exported',
-    options: const SlotTextOptions(color: Color(0xff38bdf8)),
+    options: const ReelTextOptions(color: Color(0xff38bdf8)),
   );
 } catch (_) {
   progress.fail(
     'Error',
-    options: const SlotTextOptions(color: Color(0xffe11d48)),
+    options: const ReelTextOptions(color: Color(0xffe11d48)),
   );
 }
 ```
@@ -105,7 +105,7 @@ The progress loop keeps rolling until the handle is completed, failed, or
 cancelled. Matching glyphs stay fixed by default, so `Export -> Exportaa ->
 Exportee -> Exportii` continuously animates the two uncertain suffix slots while
 waiting. `complete('Exported')` then performs the normal diff into the final
-word. Each emitted target accepts its own `SlotTextOptions`, so intermediate
+word. Each emitted target accepts its own `ReelTextOptions`, so intermediate
 progress, success, and error states can use different color modes.
 
 ### Waiting (idle) animations
@@ -114,7 +114,7 @@ For the common case you don't need to invent frames: `startWaiting()` loops a
 designed idle animation until its handle is resolved.
 
 ```dart
-final label = SlotTextController(initialText: 'Export');
+final label = ReelTextController(initialText: 'Export');
 
 final handle = label.startWaiting('Exporting');
 try {
@@ -125,23 +125,23 @@ try {
 }
 ```
 
-Pick the look with a `SlotWaiting` preset:
+Pick the look with a `ReelWaiting` preset:
 
 ```dart
 // Trailing dots: Exporting -> Exporting. -> Exporting.. -> Exporting...
-label.startWaiting('Exporting', waiting: const SlotWaiting.ellipsis());
+label.startWaiting('Exporting', waiting: const ReelWaiting.ellipsis());
 
 // The label stays readable and periodically "breathes": one stagger wave of
 // self-rolls sweeps across the glyphs, then the word rests.
 label.startWaiting(
   'Exporting',
-  waiting: const SlotWaiting.wave(rest: Duration(milliseconds: 1200)),
+  waiting: const ReelWaiting.wave(rest: Duration(milliseconds: 1200)),
 );
 
 // Explicit frames or a generator for full control (scrambles, spinners, ...).
 label.startWaiting(
   'Exporting',
-  waiting: SlotWaiting.builder((text, tick) => tick.isEven ? text : '$text…'),
+  waiting: ReelWaiting.builder((text, tick) => tick.isEven ? text : '$text…'),
 );
 ```
 
@@ -149,19 +149,19 @@ All presets compile down to the same roll engine. Each preset ships with
 designed motion defaults — `ellipsis` ticks on a steady, metronome-like beat
 derived from the roll duration, and `wave` uses a calm, non-springy curve with
 almost no tilt so the loop reads as a ripple instead of a glitch. Pass your own
-`SlotTextOptions` to take full control of direction, curve, stagger, and color.
+`ReelTextOptions` to take full control of direction, curve, stagger, and color.
 
 ### Reduced motion
 
 When the platform requests reduced motion
-(`MediaQuery.disableAnimationsOf(context)`), `SlotText` snaps to the target
+(`MediaQuery.disableAnimationsOf(context)`), `ReelText` snaps to the target
 text instantly instead of rolling. Opt out per widget with
 `respectDisableAnimations: false`.
 
 ### Dynamic fonts
 
-`SlotText` measures glyph slots from the active Flutter text layout. If your app
-loads fonts asynchronously, preload them before the first `SlotText` frame so
+`ReelText` measures glyph slots from the active Flutter text layout. If your app
+loads fonts asynchronously, preload them before the first `ReelText` frame so
 initial slot widths are measured with the final font:
 
 ```dart
@@ -177,7 +177,7 @@ Future<void> main() async {
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `direction` | `SlotTextDirection.down` | Roll direction. |
+| `direction` | `ReelTextDirection.down` | Roll direction. |
 | `stagger` | `45ms` | Delay between glyph starts. |
 | `duration` | `300ms` | Per-glyph slide duration. |
 | `exitOffset` | `50ms` | Delay before incoming glyphs chase outgoing glyphs. |

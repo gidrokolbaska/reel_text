@@ -4,8 +4,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
-/// Roll direction used by [SlotText].
-enum SlotTextDirection {
+/// Roll direction used by [ReelText].
+enum ReelTextDirection {
   /// New glyphs enter from below and old glyphs leave upward.
   up,
 
@@ -14,14 +14,14 @@ enum SlotTextDirection {
 }
 
 /// Builds a color for one glyph.
-typedef SlotTextColorBuilder = Color Function(int index, int total);
+typedef ReelTextColorBuilder = Color Function(int index, int total);
 
-/// Options for a [SlotText] roll animation.
+/// Options for a [ReelText] roll animation.
 @immutable
-class SlotTextOptions {
+class ReelTextOptions {
   /// Creates roll animation options.
-  const SlotTextOptions({
-    this.direction = SlotTextDirection.down,
+  const ReelTextOptions({
+    this.direction = ReelTextDirection.down,
     this.stagger = const Duration(milliseconds: 45),
     this.duration = const Duration(milliseconds: 300),
     this.exitOffset = const Duration(milliseconds: 50),
@@ -35,7 +35,7 @@ class SlotTextOptions {
   }) : assert(bounce >= 0);
 
   /// Roll direction.
-  final SlotTextDirection direction;
+  final ReelTextDirection direction;
 
   /// Delay between glyph starts.
   final Duration stagger;
@@ -57,7 +57,7 @@ class SlotTextOptions {
   final Color? color;
 
   /// Per-glyph color used by incoming glyphs before fading back.
-  final SlotTextColorBuilder? colorBuilder;
+  final ReelTextColorBuilder? colorBuilder;
 
   /// Duration of the color fade back to the inherited text color.
   final Duration colorFade;
@@ -72,21 +72,21 @@ class SlotTextOptions {
   final bool interrupt;
 
   /// Returns a copy with selected fields changed.
-  SlotTextOptions copyWith({
-    SlotTextDirection? direction,
+  ReelTextOptions copyWith({
+    ReelTextDirection? direction,
     Duration? stagger,
     Duration? duration,
     Duration? exitOffset,
     Curve? curve,
     double? bounce,
     Color? color,
-    SlotTextColorBuilder? colorBuilder,
+    ReelTextColorBuilder? colorBuilder,
     bool clearColor = false,
     Duration? colorFade,
     bool? skipUnchanged,
     bool? interrupt,
   }) {
-    return SlotTextOptions(
+    return ReelTextOptions(
       direction: direction ?? this.direction,
       stagger: stagger ?? this.stagger,
       duration: duration ?? this.duration,
@@ -103,31 +103,31 @@ class SlotTextOptions {
     );
   }
 
-  SlotTextOptions _merge(SlotTextOptions? other) => other ?? this;
+  ReelTextOptions _merge(ReelTextOptions? other) => other ?? this;
 }
 
-/// Builds one waiting frame for [SlotWaiting.builder].
+/// Builds one waiting frame for [ReelWaiting.builder].
 ///
-/// [text] is the base label passed to [SlotTextController.startWaiting] and
+/// [text] is the base label passed to [ReelTextController.startWaiting] and
 /// [tick] is the zero-based loop counter.
-typedef SlotWaitingFrameBuilder = String Function(String text, int tick);
+typedef ReelWaitingFrameBuilder = String Function(String text, int tick);
 
-enum _SlotWaitingKind { ellipsis, wave, frames, builder }
+enum _ReelWaitingKind { ellipsis, wave, frames, builder }
 
-/// A looping idle animation used by [SlotTextController.startWaiting].
+/// A looping idle animation used by [ReelTextController.startWaiting].
 ///
 /// Presets compile down to the same roll engine as regular text changes, so
-/// they inherit direction, curve, stagger, and color from [SlotTextOptions].
+/// they inherit direction, curve, stagger, and color from [ReelTextOptions].
 @immutable
-class SlotWaiting {
+class ReelWaiting {
   /// Dots roll in one at a time after the label, then all roll away together:
   /// `Load` -> `Load.` -> `Load..` -> `Load...` -> `Load`.
   ///
   /// When [step] is omitted, the cadence is derived from the roll duration so
   /// every dot lands on a steady, metronome-like beat.
-  const SlotWaiting.ellipsis({this.dots = 3, this.dot = '.', this.step})
+  const ReelWaiting.ellipsis({this.dots = 3, this.dot = '.', this.step})
     : assert(dots > 0),
-      _kind = _SlotWaitingKind.ellipsis,
+      _kind = _ReelWaitingKind.ellipsis,
       rest = Duration.zero,
       frames = const <String>[],
       frameBuilder = null;
@@ -138,8 +138,8 @@ class SlotWaiting {
   ///
   /// Without explicit options the wave uses a calm, non-springy curve and
   /// almost no tilt so the loop reads as a ripple instead of a glitch.
-  const SlotWaiting.wave({this.rest = const Duration(milliseconds: 1300)})
-    : _kind = _SlotWaitingKind.wave,
+  const ReelWaiting.wave({this.rest = const Duration(milliseconds: 1300)})
+    : _kind = _ReelWaitingKind.wave,
       dots = 0,
       dot = '',
       step = null,
@@ -147,29 +147,29 @@ class SlotWaiting {
       frameBuilder = null;
 
   /// Cycles through explicit [frames] every [step].
-  const SlotWaiting.frames(this.frames, {this.step})
-    : _kind = _SlotWaitingKind.frames,
+  const ReelWaiting.frames(this.frames, {this.step})
+    : _kind = _ReelWaitingKind.frames,
       dots = 0,
       dot = '',
       rest = Duration.zero,
       frameBuilder = null;
 
   /// Generates each frame with [frameBuilder] every [step].
-  const SlotWaiting.builder(
-    SlotWaitingFrameBuilder this.frameBuilder, {
+  const ReelWaiting.builder(
+    ReelWaitingFrameBuilder this.frameBuilder, {
     this.step,
-  }) : _kind = _SlotWaitingKind.builder,
+  }) : _kind = _ReelWaitingKind.builder,
        dots = 0,
        dot = '',
        rest = Duration.zero,
        frames = const <String>[];
 
-  final _SlotWaitingKind _kind;
+  final _ReelWaitingKind _kind;
 
-  /// Maximum number of trailing dots for [SlotWaiting.ellipsis].
+  /// Maximum number of trailing dots for [ReelWaiting.ellipsis].
   final int dots;
 
-  /// Dot glyph for [SlotWaiting.ellipsis].
+  /// Dot glyph for [ReelWaiting.ellipsis].
   final String dot;
 
   /// Interval between frames for [ellipsis], [frames], and [builder].
@@ -177,21 +177,21 @@ class SlotWaiting {
   /// When null, a steady cadence is derived from the effective roll duration.
   final Duration? step;
 
-  /// Quiet pause between sweeps for [SlotWaiting.wave].
+  /// Quiet pause between sweeps for [ReelWaiting.wave].
   final Duration rest;
 
-  /// Explicit frames for [SlotWaiting.frames].
+  /// Explicit frames for [ReelWaiting.frames].
   final List<String> frames;
 
-  /// Frame generator for [SlotWaiting.builder].
-  final SlotWaitingFrameBuilder? frameBuilder;
+  /// Frame generator for [ReelWaiting.builder].
+  final ReelWaitingFrameBuilder? frameBuilder;
 }
 
-/// Options for [SlotTextController.flash].
+/// Options for [ReelTextController.flash].
 @immutable
-class SlotTextFlashOptions {
+class ReelTextFlashOptions {
   /// Creates flash options.
-  const SlotTextFlashOptions({
+  const ReelTextFlashOptions({
     this.revertAfter = const Duration(milliseconds: 1400),
     this.enter,
     this.exit,
@@ -201,31 +201,31 @@ class SlotTextFlashOptions {
   final Duration revertAfter;
 
   /// Options for rolling the flash text in.
-  final SlotTextOptions? enter;
+  final ReelTextOptions? enter;
 
   /// Options for rolling the original text back in.
-  final SlotTextOptions? exit;
+  final ReelTextOptions? exit;
 }
 
-/// Imperative controller for [SlotText.controller].
-class SlotTextController extends ChangeNotifier {
+/// Imperative controller for [ReelText.controller].
+class ReelTextController extends ChangeNotifier {
   /// Creates a controller with an initial displayed text.
-  SlotTextController({required String initialText}) : _value = initialText;
+  ReelTextController({required String initialText}) : _value = initialText;
 
   Timer? _revertTimer;
   Timer? _progressTimer;
   String _value;
   String? _restingText;
-  _SlotTextCommand? _command;
+  _ReelTextCommand? _command;
   int _progressEpoch = 0;
 
   /// The currently requested text.
   String get value => _value;
 
-  _SlotTextCommand? get _currentCommand => _command;
+  _ReelTextCommand? get _currentCommand => _command;
 
   /// Permanently rolls to [text] and cancels any pending flash revert.
-  void set(String text, {SlotTextOptions? options}) {
+  void set(String text, {ReelTextOptions? options}) {
     _cancelFlash();
     _cancelProgress();
     _emit(text, options);
@@ -236,13 +236,13 @@ class SlotTextController extends ChangeNotifier {
   /// Repeated calls reset the revert timer instead of queueing extra reverts.
   void flash(
     String text, {
-    SlotTextFlashOptions options = const SlotTextFlashOptions(),
+    ReelTextFlashOptions options = const ReelTextFlashOptions(),
   }) {
     _cancelProgress();
     _restingText ??= _value;
     _emit(
       text,
-      (options.enter ?? const SlotTextOptions()).copyWith(interrupt: false),
+      (options.enter ?? const ReelTextOptions()).copyWith(interrupt: false),
     );
 
     _revertTimer?.cancel();
@@ -252,7 +252,7 @@ class SlotTextController extends ChangeNotifier {
       _revertTimer = null;
       _emit(
         back,
-        (options.exit ?? const SlotTextOptions()).copyWith(interrupt: false),
+        (options.exit ?? const ReelTextOptions()).copyWith(interrupt: false),
       );
     });
   }
@@ -266,10 +266,10 @@ class SlotTextController extends ChangeNotifier {
   /// uncertain fragment of the word. When [interval] is omitted, frames tick
   /// fast enough to keep the roll continuous. Set [animateUnchanged] to true for
   /// decorative loops that intentionally re-roll identical glyphs.
-  SlotTextProgress startProgress(
+  ReelTextProgress startProgress(
     String text, {
     List<String> frames = const <String>[],
-    SlotTextOptions? options,
+    ReelTextOptions? options,
     Duration? interval,
     bool animateUnchanged = false,
   }) {
@@ -278,7 +278,7 @@ class SlotTextController extends ChangeNotifier {
         : frames.first == text
         ? List<String>.of(frames)
         : <String>[text, ...frames];
-    final progressOptions = (options ?? const SlotTextOptions()).copyWith(
+    final progressOptions = (options ?? const ReelTextOptions()).copyWith(
       interrupt: false,
       skipUnchanged: !animateUnchanged,
     );
@@ -300,7 +300,7 @@ class SlotTextController extends ChangeNotifier {
   }
 
   // Calm motion tuned for the dot/frames loops: short rolls, light bounce.
-  static const _tickWaitingDefaults = SlotTextOptions(
+  static const _tickWaitingDefaults = ReelTextOptions(
     duration: Duration(milliseconds: 240),
     stagger: Duration(milliseconds: 34),
     exitOffset: Duration(milliseconds: 40),
@@ -309,7 +309,7 @@ class SlotTextController extends ChangeNotifier {
 
   // Calm motion tuned for the breathing wave: slower, no overshoot, almost
   // no tilt, so the loop reads as a ripple instead of a glitch.
-  static const _waveWaitingDefaults = SlotTextOptions(
+  static const _waveWaitingDefaults = ReelTextOptions(
     duration: Duration(milliseconds: 520),
     stagger: Duration(milliseconds: 46),
     exitOffset: Duration(milliseconds: 64),
@@ -321,9 +321,9 @@ class SlotTextController extends ChangeNotifier {
   /// handle is completed, failed, or cancelled.
   ///
   /// [text] is the readable base label. The look of the loop is picked with a
-  /// [SlotWaiting] preset: [SlotWaiting.ellipsis] appends rolling dots,
-  /// [SlotWaiting.wave] periodically sweeps a re-roll wave across the glyphs,
-  /// and [SlotWaiting.frames]/[SlotWaiting.builder] give full control over the
+  /// [ReelWaiting] preset: [ReelWaiting.ellipsis] appends rolling dots,
+  /// [ReelWaiting.wave] periodically sweeps a re-roll wave across the glyphs,
+  /// and [ReelWaiting.frames]/[ReelWaiting.builder] give full control over the
   /// frame sequence.
   ///
   /// ```dart
@@ -334,14 +334,14 @@ class SlotTextController extends ChangeNotifier {
   ///
   /// Calling [startWaiting] again restarts the loop from the first frame. If
   /// the trigger can be tapped repeatedly, keep the handle and skip re-entry
-  /// while [SlotTextProgress.isActive] is true.
-  SlotTextProgress startWaiting(
+  /// while [ReelTextProgress.isActive] is true.
+  ReelTextProgress startWaiting(
     String text, {
-    SlotWaiting waiting = const SlotWaiting.ellipsis(),
-    SlotTextOptions? options,
+    ReelWaiting waiting = const ReelWaiting.ellipsis(),
+    ReelTextOptions? options,
   }) {
     switch (waiting._kind) {
-      case _SlotWaitingKind.ellipsis:
+      case _ReelWaitingKind.ellipsis:
         final base = options ?? _tickWaitingDefaults;
         return startProgress(
           text,
@@ -351,7 +351,7 @@ class SlotTextController extends ChangeNotifier {
           interval: waiting.step ?? _steadyStep(base),
           options: base,
         );
-      case _SlotWaitingKind.wave:
+      case _ReelWaitingKind.wave:
         final base = options ?? _waveWaitingDefaults;
         final glyphCount = math.max(1, text.characters.length);
         final sweepMs =
@@ -368,7 +368,7 @@ class SlotTextController extends ChangeNotifier {
           animateUnchanged: true,
           options: base,
         );
-      case _SlotWaitingKind.frames:
+      case _ReelWaitingKind.frames:
         final base = options ?? _tickWaitingDefaults;
         return startProgress(
           text,
@@ -376,7 +376,7 @@ class SlotTextController extends ChangeNotifier {
           interval: waiting.step ?? _steadyStep(base),
           options: base,
         );
-      case _SlotWaitingKind.builder:
+      case _ReelWaitingKind.builder:
         final base = options ?? _tickWaitingDefaults;
         final frame = waiting.frameBuilder!;
         return _startFrameLoop(
@@ -391,7 +391,7 @@ class SlotTextController extends ChangeNotifier {
   /// A frame cadence that lets one glyph roll fully finish — including its
   /// bounce variation, exit offset, and color fade — plus a short rest, so
   /// ticks land on a steady beat instead of queueing behind in-flight rolls.
-  static Duration _steadyStep(SlotTextOptions options) {
+  static Duration _steadyStep(ReelTextOptions options) {
     final rollMs =
         (options.duration.inMilliseconds * (1 + options.bounce * 0.45)).round();
     final fadeMs = options.color != null || options.colorBuilder != null
@@ -402,11 +402,11 @@ class SlotTextController extends ChangeNotifier {
     );
   }
 
-  SlotTextProgress _startFrameLoop({
+  ReelTextProgress _startFrameLoop({
     required String initial,
     required String Function(int tick) frameAt,
     required Duration interval,
-    required SlotTextOptions options,
+    required ReelTextOptions options,
   }) {
     _cancelFlash();
     _cancelProgress();
@@ -423,10 +423,10 @@ class SlotTextController extends ChangeNotifier {
       _emit(frameAt(tick), options, force: true);
     });
 
-    return SlotTextProgress._(this, epoch);
+    return ReelTextProgress._(this, epoch);
   }
 
-  void _completeProgress(int epoch, String text, {SlotTextOptions? options}) {
+  void _completeProgress(int epoch, String text, {ReelTextOptions? options}) {
     if (!_isProgressActive(epoch)) {
       return;
     }
@@ -437,7 +437,7 @@ class SlotTextController extends ChangeNotifier {
   void _cancelProgressHandle(
     int epoch, {
     String? text,
-    SlotTextOptions? options,
+    ReelTextOptions? options,
   }) {
     if (!_isProgressActive(epoch)) {
       return;
@@ -464,9 +464,9 @@ class SlotTextController extends ChangeNotifier {
     _progressEpoch++;
   }
 
-  void _emit(String text, SlotTextOptions? options, {bool force = false}) {
+  void _emit(String text, ReelTextOptions? options, {bool force = false}) {
     _value = text;
-    _command = _SlotTextCommand(text, options, force: force);
+    _command = _ReelTextCommand(text, options, force: force);
     notifyListeners();
   }
 
@@ -478,39 +478,39 @@ class SlotTextController extends ChangeNotifier {
   }
 }
 
-/// Handle returned by [SlotTextController.startProgress].
+/// Handle returned by [ReelTextController.startProgress].
 ///
 /// Keep the handle for the async operation that owns the in-progress label and
 /// resolve it with [complete] or [fail]. Calling any method after the handle is
 /// no longer active is a no-op.
-class SlotTextProgress {
-  const SlotTextProgress._(this._controller, this._epoch);
+class ReelTextProgress {
+  const ReelTextProgress._(this._controller, this._epoch);
 
-  final SlotTextController _controller;
+  final ReelTextController _controller;
   final int _epoch;
 
   /// Whether this handle still owns the controller progress loop.
   bool get isActive => _controller._isProgressActive(_epoch);
 
   /// Stops the progress loop and rolls to [text].
-  void complete(String text, {SlotTextOptions? options}) {
+  void complete(String text, {ReelTextOptions? options}) {
     _controller._completeProgress(_epoch, text, options: options);
   }
 
   /// Stops the progress loop and rolls to an error [text].
-  void fail(String text, {SlotTextOptions? options}) {
+  void fail(String text, {ReelTextOptions? options}) {
     complete(text, options: options);
   }
 
   /// Stops the progress loop. When [text] is provided, it is emitted as the next
   /// resting label.
-  void cancel({String? text, SlotTextOptions? options}) {
+  void cancel({String? text, ReelTextOptions? options}) {
     _controller._cancelProgressHandle(_epoch, text: text, options: options);
   }
 }
 
 /// Returns a per-character rainbow color sweep.
-SlotTextColorBuilder chromatic({
+ReelTextColorBuilder chromatic({
   double from = 0,
   double spread = 320,
   double saturation = 0.92,
@@ -524,12 +524,12 @@ SlotTextColorBuilder chromatic({
 }
 
 /// Text widget that rolls changed glyphs through clipped slots.
-class SlotText extends StatefulWidget {
-  /// Creates a declarative slot text widget.
-  const SlotText(
+class ReelText extends StatefulWidget {
+  /// Creates a declarative reel text widget.
+  const ReelText(
     this.text, {
     super.key,
-    this.options = const SlotTextOptions(),
+    this.options = const ReelTextOptions(),
     this.style,
     this.textAlign,
     this.textDirection,
@@ -539,11 +539,11 @@ class SlotText extends StatefulWidget {
     this.respectDisableAnimations = true,
   }) : controller = null;
 
-  /// Creates an imperative slot text widget driven by [controller].
-  const SlotText.controller({
+  /// Creates an imperative reel text widget driven by [controller].
+  const ReelText.controller({
     super.key,
-    required SlotTextController this.controller,
-    this.options = const SlotTextOptions(),
+    required ReelTextController this.controller,
+    this.options = const ReelTextOptions(),
     this.style,
     this.textAlign,
     this.textDirection,
@@ -557,10 +557,10 @@ class SlotText extends StatefulWidget {
   final String? text;
 
   /// Controller in imperative mode.
-  final SlotTextController? controller;
+  final ReelTextController? controller;
 
   /// Default animation options.
-  final SlotTextOptions options;
+  final ReelTextOptions options;
 
   /// Text style.
   final TextStyle? style;
@@ -585,16 +585,16 @@ class SlotText extends StatefulWidget {
   final bool respectDisableAnimations;
 
   @override
-  State<SlotText> createState() => _SlotTextState();
+  State<ReelText> createState() => _ReelTextState();
 }
 
-class _SlotTextState extends State<SlotText>
+class _ReelTextState extends State<ReelText>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late String _displayedText;
   String? _targetText;
   _RollPlan? _plan;
-  _SlotTextCommand? _pending;
+  _ReelTextCommand? _pending;
 
   String get _effectiveText => widget.controller?.value ?? widget.text ?? '';
 
@@ -625,7 +625,7 @@ class _SlotTextState extends State<SlotText>
   }
 
   @override
-  void didUpdateWidget(covariant SlotText oldWidget) {
+  void didUpdateWidget(covariant ReelText oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller?.removeListener(_handleControllerChange);
@@ -665,7 +665,7 @@ class _SlotTextState extends State<SlotText>
       widget.respectDisableAnimations &&
       (MediaQuery.maybeDisableAnimationsOf(context) ?? false);
 
-  void _rollTo(String text, SlotTextOptions options, {bool force = false}) {
+  void _rollTo(String text, ReelTextOptions options, {bool force = false}) {
     if (_animationsDisabled) {
       _controller.stop();
       setState(() {
@@ -679,7 +679,7 @@ class _SlotTextState extends State<SlotText>
 
     if (_controller.isAnimating && !options.interrupt) {
       if (force || text != _targetText) {
-        _pending = _SlotTextCommand(text, options, force: force);
+        _pending = _ReelTextCommand(text, options, force: force);
       }
       return;
     }
@@ -754,9 +754,9 @@ class _SlotTextState extends State<SlotText>
 
     Widget child;
     if (plan == null) {
-      child = _SettledSlotText(
+      child = _SettledReelText(
         text: _displayedText,
-        key: const ValueKey('slot_text_settled'),
+        key: const ValueKey('reel_text_settled'),
         style: style,
         textDirection: direction,
         locale: widget.locale,
@@ -783,7 +783,7 @@ class _SlotTextState extends State<SlotText>
             text: plan.toText,
           );
           return Row(
-            key: const ValueKey('slot_text_rolling'),
+            key: const ValueKey('reel_text_rolling'),
             mainAxisSize: MainAxisSize.min,
             textDirection: direction,
             children: [
@@ -812,8 +812,8 @@ class _SlotTextState extends State<SlotText>
   }
 }
 
-class _SettledSlotText extends StatelessWidget {
-  const _SettledSlotText({
+class _SettledReelText extends StatelessWidget {
+  const _SettledReelText({
     super.key,
     required this.text,
     required this.style,
@@ -841,7 +841,7 @@ class _SettledSlotText extends StatelessWidget {
     return SizedBox(
       height: runMetrics.height,
       child: Row(
-        key: const ValueKey('slot_text_settled_glyphs'),
+        key: const ValueKey('reel_text_settled_glyphs'),
         mainAxisSize: MainAxisSize.min,
         textDirection: textDirection,
         children: [
@@ -1249,11 +1249,11 @@ Alignment _inlineStartAlignment(TextDirection textDirection) {
       : Alignment.centerLeft;
 }
 
-class _SlotTextCommand {
-  const _SlotTextCommand(this.text, this.options, {this.force = false});
+class _ReelTextCommand {
+  const _ReelTextCommand(this.text, this.options, {this.force = false});
 
   final String text;
-  final SlotTextOptions? options;
+  final ReelTextOptions? options;
   final bool force;
 }
 
@@ -1275,7 +1275,7 @@ class _RollPlan {
   static _RollPlan create({
     required String fromText,
     required String toText,
-    required SlotTextOptions options,
+    required ReelTextOptions options,
   }) {
     final fromChars = fromText.characters.toList();
     final toChars = toText.characters.toList();
@@ -1378,7 +1378,7 @@ class _SlotPlan {
   final int durationMs;
   final int exitOffsetMs;
   final int colorFadeMs;
-  final SlotTextDirection direction;
+  final ReelTextDirection direction;
   final Curve curve;
   final Color? color;
   final double tiltRadians;
@@ -1415,12 +1415,12 @@ class _SlotPlan {
   }
 
   double outY(double nowMs, double height) {
-    final sign = direction == SlotTextDirection.down ? 1.0 : -1.0;
+    final sign = direction == ReelTextDirection.down ? 1.0 : -1.0;
     return sign * height * outT(nowMs);
   }
 
   double inY(double nowMs, double height) {
-    final sign = direction == SlotTextDirection.down ? -1.0 : 1.0;
+    final sign = direction == ReelTextDirection.down ? -1.0 : 1.0;
     return sign * height * (1 - inT(nowMs));
   }
 
@@ -1428,7 +1428,7 @@ class _SlotPlan {
     final value = curve.transform(_linear(nowMs, startMs, spanMs));
     // Let springy curves overshoot past the resting line instead of clamping
     // them flat — this is what makes the glyph visibly settle with a bounce.
-    // The depth is scaled by [overshoot] (driven by SlotTextOptions.bounce).
+    // The depth is scaled by [overshoot] (driven by ReelTextOptions.bounce).
     if (value > 1) {
       return 1 + (value - 1) * overshoot;
     }

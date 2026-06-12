@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:slot_text/slot_text.dart';
+import 'package:reel_text/reel_text.dart';
 
 import 'studio.dart';
 
 /// Dark code block with lightweight Dart highlighting and a copy button.
 ///
-/// The copy button label is itself a [SlotText] driven by `flash()` — the
+/// The copy button label is itself a [ReelText] driven by `flash()` — the
 /// example dogfoods the package everywhere it can.
 class CodeView extends StatefulWidget {
   const CodeView({super.key, required this.code});
@@ -18,12 +18,12 @@ class CodeView extends StatefulWidget {
 }
 
 class _CodeViewState extends State<CodeView> {
-  late final SlotTextController _copy;
+  late final ReelTextController _copy;
 
   @override
   void initState() {
     super.initState();
-    _copy = SlotTextController(initialText: 'copy');
+    _copy = ReelTextController(initialText: 'copy');
   }
 
   @override
@@ -36,16 +36,16 @@ class _CodeViewState extends State<CodeView> {
     await Clipboard.setData(ClipboardData(text: widget.code));
     _copy.flash(
       'copied',
-      options: const SlotTextFlashOptions(
-        enter: SlotTextOptions(
+      options: const ReelTextFlashOptions(
+        enter: ReelTextOptions(
           duration: Duration(milliseconds: 220),
           stagger: Duration(milliseconds: 20),
           color: Studio.lime,
         ),
-        exit: SlotTextOptions(
+        exit: ReelTextOptions(
           duration: Duration(milliseconds: 220),
           stagger: Duration(milliseconds: 20),
-          direction: SlotTextDirection.up,
+          direction: ReelTextDirection.up,
         ),
       ),
     );
@@ -87,7 +87,7 @@ class _CodeViewState extends State<CodeView> {
                     ),
                   ),
                   icon: const Icon(Icons.copy_rounded, size: 14),
-                  label: SlotText.controller(
+                  label: ReelText.controller(
                     controller: _copy,
                     style: Studio.mono(size: 12, weight: FontWeight.w700),
                   ),
