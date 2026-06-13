@@ -21,19 +21,6 @@ class _TextRunMetrics {
     required StrutStyle? strutStyle,
     required String text,
   }) {
-    if (text.isEmpty) {
-      final metrics = _GlyphMetrics.of(
-        context: context,
-        style: style,
-        textDirection: textDirection,
-        locale: locale,
-        strutStyle: strutStyle,
-        from: ' ',
-        to: ' ',
-      );
-      return _TextRunMetrics(widths: const <double>[], height: metrics.height);
-    }
-
     final textScaler =
         MediaQuery.maybeTextScalerOf(context) ?? TextScaler.noScaling;
     final painter = TextPainter(
@@ -66,12 +53,7 @@ class _TextRunMetrics {
       widths[widths.length - 1] += painter.size.width - measured;
     }
 
-    final textHeight = painter.size.height;
-    final verticalBreathingRoom = math.max(6.0, textHeight * 0.18);
-    return _TextRunMetrics(
-      widths: widths,
-      height: textHeight + verticalBreathingRoom * 2,
-    );
+    return _TextRunMetrics(widths: widths, height: painter.size.height);
   }
 
   static double _caretDx(TextPainter painter, int offset) {
@@ -91,61 +73,6 @@ class _GlyphMetrics {
   final double fromWidth;
   final double toWidth;
   final double height;
-
-  static _GlyphMetrics of({
-    required BuildContext context,
-    required TextStyle style,
-    required TextDirection textDirection,
-    required Locale? locale,
-    required StrutStyle? strutStyle,
-    required String from,
-    required String to,
-  }) {
-    final textScaler =
-        MediaQuery.maybeTextScalerOf(context) ?? TextScaler.noScaling;
-    final fromSize = _measure(
-      text: from.isEmpty ? ' ' : from,
-      style: style,
-      textDirection: textDirection,
-      locale: locale,
-      strutStyle: strutStyle,
-      textScaler: textScaler,
-    );
-    final toSize = _measure(
-      text: to.isEmpty ? ' ' : to,
-      style: style,
-      textDirection: textDirection,
-      locale: locale,
-      strutStyle: strutStyle,
-      textScaler: textScaler,
-    );
-    final textHeight = math.max(fromSize.height, toSize.height);
-    final verticalBreathingRoom = math.max(6.0, textHeight * 0.18);
-    return _GlyphMetrics(
-      fromWidth: from.isEmpty ? 0 : fromSize.width,
-      toWidth: to.isEmpty ? 0 : toSize.width,
-      height: textHeight + verticalBreathingRoom * 2,
-    );
-  }
-
-  static Size _measure({
-    required String text,
-    required TextStyle style,
-    required TextDirection textDirection,
-    required Locale? locale,
-    required StrutStyle? strutStyle,
-    required TextScaler textScaler,
-  }) {
-    final painter = TextPainter(
-      text: TextSpan(text: text, style: style),
-      textDirection: textDirection,
-      textScaler: textScaler,
-      locale: locale,
-      strutStyle: strutStyle,
-      maxLines: 1,
-    )..layout();
-    return painter.size;
-  }
 }
 
 Alignment _inlineStartAlignment(TextDirection textDirection) {

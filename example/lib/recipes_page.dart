@@ -73,6 +73,14 @@ class RecipesPage extends StatelessWidget {
         preview: _ReducedMotionPreview(),
         code: _reducedMotionCode,
       ),
+      const _RecipeCard(
+        title: 'Text parity, selection, emoji',
+        blurb:
+            'ReelText keeps the same layout box as Text, participates in '
+            'SelectionArea, and treats emoji sequences as whole glyphs.',
+        preview: _ParitySelectionEmojiPreview(),
+        code: _paritySelectionEmojiCode,
+      ),
     ];
 
     return ListView.separated(
@@ -701,6 +709,81 @@ class _ReducedMotionPreviewState extends State<_ReducedMotionPreview> {
           child: const Text('Toggle status'),
         ),
       ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 8. Text parity, selection, emoji
+// ---------------------------------------------------------------------------
+
+const _paritySelectionEmojiCode = '''
+SelectionArea(
+  child: SizedBox(
+    width: 260,
+    child: ReelText(
+      'Ready 👨‍👩‍👧‍👦 🇰🇿',
+      textAlign: TextAlign.end,
+      style: const TextStyle(fontSize: 24),
+    ),
+  ),
+);''';
+
+class _ParitySelectionEmojiPreview extends StatefulWidget {
+  const _ParitySelectionEmojiPreview();
+
+  @override
+  State<_ParitySelectionEmojiPreview> createState() =>
+      _ParitySelectionEmojiPreviewState();
+}
+
+class _ParitySelectionEmojiPreviewState
+    extends State<_ParitySelectionEmojiPreview> {
+  bool _edited = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = _edited ? 'Ready 👨‍👩‍👧‍👦 🇰🇿' : 'Draft 👍🏽';
+    final style = Studio.mono(
+      size: 21,
+      color: Studio.text,
+      weight: FontWeight.w700,
+      height: 1.15,
+    );
+
+    return SelectionArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Text', style: Studio.mono(size: 10, color: Studio.faint)),
+          SizedBox(width: 260, child: Text(text, style: style)),
+          const SizedBox(height: 12),
+          Text('ReelText', style: Studio.mono(size: 10, color: Studio.faint)),
+          SizedBox(
+            width: 260,
+            child: ReelText(
+              text,
+              textAlign: TextAlign.end,
+              options: const ReelTextOptions(
+                duration: Duration(milliseconds: 180),
+                stagger: Duration(milliseconds: 16),
+                exitOffset: Duration.zero,
+              ),
+              style: style,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: StudioButton(
+              onPressed: () => setState(() => _edited = !_edited),
+              filled: false,
+              child: const Text('Edit text'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

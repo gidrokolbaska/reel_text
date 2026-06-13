@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:reel_text/reel_text.dart';
 
@@ -60,6 +61,156 @@ void main() {
     )..layout();
 
     expect(tester.getSize(find.byType(ReelText)).width, painter.size.width);
+  });
+
+  testWidgets('settled layout matches Text size exactly', (tester) async {
+    const reelKey = ValueKey('reel_exact_size');
+    const textKey = ValueKey('text_exact_size');
+    const text = 'Draft 42';
+    const style = TextStyle(
+      fontSize: 38,
+      height: 1.15,
+      fontWeight: FontWeight.w800,
+      letterSpacing: 0.6,
+    );
+
+    await tester.pumpWidget(
+      const Directionality(
+        textDirection: TextDirection.ltr,
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ReelText(text, key: reelKey, style: style),
+              Text(text, key: textKey, style: style),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      tester.getSize(find.byKey(reelKey)),
+      tester.getSize(find.byKey(textKey)),
+    );
+  });
+
+  testWidgets('rolling layout matches target Text size exactly', (
+    tester,
+  ) async {
+    const reelKey = ValueKey('reel_exact_size');
+    const textKey = ValueKey('text_exact_size');
+    const style = TextStyle(
+      fontSize: 34,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 0.4,
+    );
+    const options = ReelTextOptions(
+      duration: Duration(milliseconds: 180),
+      stagger: Duration.zero,
+      exitOffset: Duration.zero,
+    );
+
+    Widget frame(String reelText, String textText) {
+      return Directionality(
+        textDirection: TextDirection.ltr,
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ReelText(reelText, key: reelKey, style: style, options: options),
+              Text(textText, key: textKey, style: style),
+            ],
+          ),
+        ),
+      );
+    }
+
+    await tester.pumpWidget(frame('AI', 'AI writes ✨'));
+    await tester.pumpWidget(frame('AI writes ✨', 'AI writes ✨'));
+    await tester.pump(const Duration(milliseconds: 80));
+
+    expect(find.byKey(const ValueKey('reel_text_rolling')), findsOneWidget);
+    expect(
+      tester.getSize(find.byKey(reelKey)),
+      tester.getSize(find.byKey(textKey)),
+    );
+  });
+
+  testWidgets('complex emoji clusters match Text size and roll safely', (
+    tester,
+  ) async {
+    const reelKey = ValueKey('reel_emoji_size');
+    const textKey = ValueKey('text_emoji_size');
+    const text = 'Launch 👨‍👩‍👧‍👦 🇰🇿 👍🏽';
+    const style = TextStyle(fontSize: 30, fontWeight: FontWeight.w700);
+
+    Widget frame(String reelText) {
+      return Directionality(
+        textDirection: TextDirection.ltr,
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ReelText(
+                reelText,
+                key: reelKey,
+                style: style,
+                options: const ReelTextOptions(
+                  duration: Duration(milliseconds: 100),
+                  stagger: Duration.zero,
+                  exitOffset: Duration.zero,
+                ),
+              ),
+              ExcludeSemantics(
+                child: Text(text, key: textKey, style: style),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    await tester.pumpWidget(frame('Launch 🚀'));
+    await tester.pumpWidget(frame(text));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.bySemanticsLabel(text), findsOneWidget);
+    expect(
+      tester.getSize(find.byKey(reelKey)),
+      tester.getSize(find.byKey(textKey)),
+    );
+  });
+
+  testWidgets('exposes one full selectable text surface inside SelectionArea', (
+    tester,
+  ) async {
+    const text = 'Select ReelText 👋';
+    const style = TextStyle(fontSize: 28, fontWeight: FontWeight.w700);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: SelectionArea(
+          child: Center(child: ReelText(text, style: style)),
+        ),
+      ),
+    );
+
+    final selectionSurface = find.byKey(
+      const ValueKey('reel_text_selection_surface'),
+    );
+
+    expect(selectionSurface, findsOneWidget);
+    expect(
+      tester.getSize(selectionSurface),
+      tester.getSize(find.byType(ReelText)),
+    );
+
+    final paragraph = tester.renderObject<RenderParagraph>(selectionSurface);
+    expect(paragraph.text.toPlainText(), text);
+    expect(paragraph.registrar, isNotNull);
   });
 
   testWidgets('textAlign end aligns settled glyphs inside bounded width', (

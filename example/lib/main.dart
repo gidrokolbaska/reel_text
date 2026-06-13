@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:reel_text/reel_text.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'document_page.dart';
 import 'recipes_page.dart';
 import 'showcase_page.dart';
 import 'studio.dart';
@@ -99,6 +100,8 @@ class StudioShell extends StatefulWidget {
 }
 
 class _StudioShellState extends State<StudioShell> {
+  static const _pages = [ShowcasePage(), RecipesPage(), AIDocumentPage()];
+
   int _page = 0;
 
   @override
@@ -113,10 +116,7 @@ class _StudioShellState extends State<StudioShell> {
             ),
             const Divider(height: 1, color: Studio.border),
             Expanded(
-              child: IndexedStack(
-                index: _page,
-                children: const [ShowcasePage(), RecipesPage()],
-              ),
+              child: IndexedStack(index: _page, children: _pages),
             ),
           ],
         ),
@@ -130,6 +130,8 @@ class _TopBar extends StatelessWidget {
 
   final int page;
   final ValueChanged<int> onPageChanged;
+
+  static const _pageNames = ['SHOWCASE', 'RECIPES', 'AI DOC'];
 
   static final _pubDevUri = Uri.parse('https://pub.dev/packages/reel_text');
   static final _githubUri = Uri.parse('https://github.com/KickNext/reel_text');
@@ -156,6 +158,7 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 560;
+    final nextPage = (page + 1) % _pageNames.length;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       child: Row(
@@ -191,7 +194,7 @@ class _TopBar extends StatelessWidget {
                 ),
                 // The current page name rolls on switch.
                 ReelText(
-                  page == 0 ? 'SHOWCASE' : 'RECIPES',
+                  _pageNames[page],
                   options: _rollOptions,
                   style: Studio.mono(
                     size: 9.5,
@@ -217,7 +220,7 @@ class _TopBar extends StatelessWidget {
           const SizedBox(width: 10),
           // One toggle: the label names the other page and rolls on tap.
           OutlinedButton.icon(
-            onPressed: () => onPageChanged(page == 0 ? 1 : 0),
+            onPressed: () => onPageChanged(nextPage),
             style: OutlinedButton.styleFrom(
               foregroundColor: Studio.text,
               side: const BorderSide(color: Studio.borderBright),
@@ -228,9 +231,9 @@ class _TopBar extends StatelessWidget {
             ),
             icon: const Icon(Icons.arrow_outward_rounded, size: 15),
             label: ReelText(
-              page == 0 ? 'RECIPES' : 'SHOWCASE',
+              _pageNames[nextPage],
               options: _rollOptions.copyWith(
-                direction: page == 0
+                direction: nextPage > page
                     ? ReelTextDirection.up
                     : ReelTextDirection.down,
               ),

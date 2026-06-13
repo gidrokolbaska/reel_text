@@ -133,11 +133,7 @@ class _GlyphSlot extends StatelessWidget {
         ),
       );
     }
-    final width = ui.lerpDouble(
-      metrics.fromWidth,
-      metrics.toWidth,
-      slot.widthT(progressMs),
-    )!;
+    final width = metrics.toWidth;
     final textColor =
         style.color ?? DefaultTextStyle.of(context).style.color ?? Colors.black;
     final incomingColor = slot.color == null

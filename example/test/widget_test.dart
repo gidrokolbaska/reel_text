@@ -53,5 +53,29 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('Waiting presets'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Text parity, selection, emoji'),
+      400,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Text parity, selection, emoji'), findsOneWidget);
+  });
+
+  testWidgets('ai document page shows multipage neural editing demo', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const ReelTextExampleApp(useGoogleFonts: false));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    await tester.tap(find.bySemanticsLabel('RECIPES'));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.bySemanticsLabel('AI DOC'));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.bySemanticsLabel('AI DOC'), findsOneWidget);
+    expect(find.text('Neural editor'), findsOneWidget);
+    expect(find.text('Page 1 of 4'), findsOneWidget);
+    expect(find.bySemanticsLabel('Calibrating tone'), findsOneWidget);
   });
 }

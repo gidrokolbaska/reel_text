@@ -158,15 +158,27 @@ When the platform requests reduced motion
 text instantly instead of rolling. Opt out per widget with
 `respectDisableAnimations: false`.
 
-### Alignment
+### Text layout, selection, and emoji
 
-`textAlign` is honored when `ReelText` receives bounded width, matching the
-usual Flutter `Text` behavior for short labels:
+`ReelText` keeps the same single-line layout box as Flutter `Text` for the
+current target string, including during a roll. It does not add extra vertical
+padding for the animation. `textAlign` is honored when the widget receives
+bounded width:
 
 ```dart
 const SizedBox(
   width: 160,
   child: ReelText('Copied', textAlign: TextAlign.end),
+);
+```
+
+Inside a `SelectionArea`, `ReelText` exposes one selectable surface for the full
+current string while the animated glyphs stay visual-only. Extended emoji and
+joined emoji sequences are treated as whole glyph clusters:
+
+```dart
+SelectionArea(
+  child: ReelText('Ready 👨‍👩‍👧‍👦 🇰🇿 👍🏽'),
 );
 ```
 
@@ -210,9 +222,9 @@ cd example
 flutter run
 ```
 
-The example is a two-page studio: **Showcase** is a designed demo of the hero
+The example is a three-page studio: **Showcase** is a designed demo of the hero
 roll, the three waiting presets, async operation handles, counters, and a
 motion desk; **Recipes** pairs live, working previews with copy-ready code for
-the most common situations (declarative swaps, `flash()` buttons, async
-handles, waiting presets, tabular counters, spam-safe buttons, and reduced
-motion).
+the most common situations, including layout parity, selection, and emoji;
+**AI Doc** simulates a neural editor revising a large selectable multi-page
+document with short animated phrases.

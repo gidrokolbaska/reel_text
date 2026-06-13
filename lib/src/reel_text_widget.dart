@@ -290,7 +290,15 @@ class _ReelTextState extends State<ReelText>
 
     return Semantics(
       label: widget.semanticsLabel ?? visibleText,
-      child: ExcludeSemantics(child: child),
+      child: _ReelTextSelection(
+        text: visibleText,
+        style: style,
+        textAlign: widget.textAlign ?? TextAlign.start,
+        textDirection: direction,
+        locale: widget.locale,
+        strutStyle: widget.strutStyle,
+        child: child,
+      ),
     );
   }
 }

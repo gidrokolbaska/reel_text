@@ -4,6 +4,12 @@
   the public `package:reel_text/reel_text.dart` API.
 - Implemented and documented `textAlign` support for bounded-width `ReelText`
   layouts, covering both settled and rolling glyph states.
+- Tightened layout to match Flutter `Text` exactly for settled and rolling
+  target strings without extra animation padding.
+- Added SelectionArea support through a full-string selectable surface while
+  keeping animated glyphs visual-only.
+- Added tests and examples for extended emoji clusters, selection, exact text
+  sizing, and a large multi-page AI document editing demo.
 
 ## 0.0.1
 
