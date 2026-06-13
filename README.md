@@ -158,6 +158,18 @@ When the platform requests reduced motion
 text instantly instead of rolling. Opt out per widget with
 `respectDisableAnimations: false`.
 
+### Alignment
+
+`textAlign` is honored when `ReelText` receives bounded width, matching the
+usual Flutter `Text` behavior for short labels:
+
+```dart
+const SizedBox(
+  width: 160,
+  child: ReelText('Copied', textAlign: TextAlign.end),
+);
+```
+
 ### Dynamic fonts
 
 `ReelText` measures glyph slots from the active Flutter text layout. If your app

@@ -1,3 +1,10 @@
+## Unreleased
+
+- Split internal implementation into focused Dart part files while preserving
+  the public `package:reel_text/reel_text.dart` API.
+- Implemented and documented `textAlign` support for bounded-width `ReelText`
+  layouts, covering both settled and rolling glyph states.
+
 ## 0.0.1
 
 - Initial Flutter `ReelText` widget.

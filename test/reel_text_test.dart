@@ -62,6 +62,74 @@ void main() {
     expect(tester.getSize(find.byType(ReelText)).width, painter.size.width);
   });
 
+  testWidgets('textAlign end aligns settled glyphs inside bounded width', (
+    tester,
+  ) async {
+    const boxKey = ValueKey('reel_text_alignment_box');
+
+    await tester.pumpWidget(
+      const Directionality(
+        textDirection: TextDirection.ltr,
+        child: Center(
+          child: SizedBox(
+            key: boxKey,
+            width: 240,
+            child: ReelText(
+              'Go',
+              textAlign: TextAlign.end,
+              style: TextStyle(fontSize: 32),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final box = tester.getRect(find.byKey(boxKey));
+    final lastGlyph = tester.getRect(find.text('o'));
+
+    expect(lastGlyph.right, closeTo(box.right, 0.01));
+  });
+
+  testWidgets('textAlign center aligns rolling glyphs inside bounded width', (
+    tester,
+  ) async {
+    const boxKey = ValueKey('reel_text_alignment_box');
+    const options = ReelTextOptions(
+      duration: Duration(milliseconds: 80),
+      stagger: Duration.zero,
+      exitOffset: Duration.zero,
+    );
+
+    Widget wrap(String text) {
+      return Directionality(
+        textDirection: TextDirection.ltr,
+        child: Center(
+          child: SizedBox(
+            key: boxKey,
+            width: 240,
+            child: ReelText(
+              text,
+              textAlign: TextAlign.center,
+              options: options,
+              style: const TextStyle(fontSize: 32),
+            ),
+          ),
+        ),
+      );
+    }
+
+    await tester.pumpWidget(wrap('Go'));
+    await tester.pumpWidget(wrap('Gone'));
+    await tester.pump(const Duration(milliseconds: 40));
+
+    final box = tester.getRect(find.byKey(boxKey));
+    final rolling = tester.getRect(
+      find.byKey(const ValueKey('reel_text_rolling')),
+    );
+
+    expect(rolling.center.dx, closeTo(box.center.dx, 0.01));
+  });
+
   testWidgets('declarative text changes roll then settle', (tester) async {
     await tester.pumpWidget(
       const Directionality(
