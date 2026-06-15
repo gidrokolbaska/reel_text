@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:reel_text/reel_text.dart';
@@ -18,84 +17,71 @@ class RecipesPage extends StatelessWidget {
     final recipes = <Widget>[
       const _RecipeCard(
         title: 'Declarative swap',
-        blurb:
-            'The simplest form: rebuild with a different string and only the '
-            'changed glyphs roll.',
+        blurb: 'Rebuild with a new string. Unchanged glyphs stay planted.',
         preview: _DeclarativePreview(),
         code: _declarativeCode,
       ),
       const _RecipeCard(
-        title: 'Copy button with flash()',
+        title: 'Copy button',
         blurb:
-            'flash() rolls a temporary label in, then rolls the resting text '
-            'back. Rapid taps reset the revert timer instead of stacking.',
+            'Use flash() for temporary feedback without resizing the button.',
         preview: _FlashPreview(),
         code: _flashCode,
       ),
       const _RecipeCard(
         title: 'Counter',
-        blurb:
-            'Only the digits that actually change roll, and the direction '
-            'follows the delta: increments roll bottom-up, decrements '
-            'top-down. A monospaced face keeps the slots from shifting.',
+        blurb: 'Only changed digits move. Direction follows the delta.',
         preview: _CounterPreview(),
         code: _counterCode,
       ),
       const _RecipeCard(
-        title: 'Async operation with a handle',
-        blurb:
-            'startWaiting() loops an idle animation until your future '
-            'resolves, then the handle rolls in the final label.',
+        title: 'Async action',
+        blurb: 'runWhile() keeps the label alive until a Future settles.',
         preview: _AsyncPreview(),
         code: _asyncCode,
       ),
       const _RecipeCard(
-        title: 'Waiting presets',
-        blurb:
-            'Three looks for the same loop: trailing dots, a breathing wave '
-            'across the word, or fully custom frames from a builder.',
+        title: 'Waiting label',
+        blurb: 'startWaiting() returns a handle you can complete or fail.',
         preview: _WaitingPreview(),
         code: _waitingCode,
       ),
       const _RecipeCard(
-        title: 'Spam-safe button (interrupt: false)',
+        title: 'Spam-safe tap',
         blurb:
-            'With interrupt: false an in-flight roll finishes first and only '
-            'the latest pending target plays next — mash away.',
+            'interrupt: false queues the latest target instead of thrashing.',
         preview: _SpamSafePreview(),
         code: _spamSafeCode,
-      ),
-      const _RecipeCard(
-        title: 'Reduced motion',
-        blurb:
-            'When the platform asks for reduced motion, ReelText snaps to '
-            'the target instantly. Toggle the simulation to verify.',
-        preview: _ReducedMotionPreview(),
-        code: _reducedMotionCode,
-      ),
-      const _RecipeCard(
-        title: 'Text parity, selection, emoji',
-        blurb:
-            'ReelText keeps the same layout box as Text, participates in '
-            'SelectionArea, and treats emoji sequences as whole glyphs.',
-        preview: _ParitySelectionEmojiPreview(),
-        code: _paritySelectionEmojiCode,
       ),
     ];
 
     return ListView.separated(
+      key: const ValueKey('recipes_list'),
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 16 : 28,
-        vertical: 24,
+        horizontal: compact ? 16 : 40,
+        vertical: 20,
       ),
-      itemCount: recipes.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 18),
-      itemBuilder: (context, index) => Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1100),
-          child: recipes[index],
-        ),
-      ),
+      itemCount: recipes.length + 1,
+      separatorBuilder: (_, index) => index == recipes.length - 1
+          ? const SizedBox(height: 28)
+          : const SizedBox(height: 18),
+      itemBuilder: (context, index) {
+        if (index == recipes.length) {
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1180),
+              child: const StudioFooter(),
+            ),
+          );
+        }
+        return Center(
+          child: ConstrainedBox(
+            key: ValueKey('recipes_content_frame_$index'),
+            constraints: const BoxConstraints(maxWidth: 1180),
+            child: recipes[index],
+          ),
+        );
+      },
     );
   }
 }
@@ -156,6 +142,99 @@ class _RecipeCard extends StatelessWidget {
   }
 }
 
+class _RecipeMotionSlot extends StatelessWidget {
+  const _RecipeMotionSlot({
+    required this.height,
+    required this.child,
+    this.width,
+    this.slotKey,
+  });
+
+  final double height;
+  final double? width;
+  final Key? slotKey;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRect(
+      child: SizedBox(
+        key: slotKey,
+        width: width,
+        height: height,
+        child: Center(child: child),
+      ),
+    );
+  }
+}
+
+class _RecipeReelButton extends StatelessWidget {
+  const _RecipeReelButton({
+    required this.onPressed,
+    required this.controller,
+    required this.icon,
+    required this.labelWidth,
+    required this.slotKey,
+    this.buttonKey,
+    this.accent,
+  });
+
+  static const height = 44.0;
+
+  final VoidCallback onPressed;
+  final ReelTextController controller;
+  final IconData icon;
+  final double labelWidth;
+  final Key slotKey;
+  final Key? buttonKey;
+  final Color? accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final fill = accent ?? Studio.primary;
+    final foreground = Studio.onAccent(fill);
+    return Material(
+      color: fill,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          key: buttonKey,
+          height: height,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 16, color: foreground),
+                const SizedBox(width: 8),
+                _RecipeMotionSlot(
+                  slotKey: slotKey,
+                  width: labelWidth,
+                  height: height,
+                  child: ReelText.controller(
+                    controller: controller,
+                    style: Studio.mono(
+                      size: 12.5,
+                      color: foreground,
+                      weight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                      height: Studio.compactLabelLineHeight,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ---------------------------------------------------------------------------
 // 1. Declarative swap
 // ---------------------------------------------------------------------------
@@ -163,12 +242,19 @@ class _RecipeCard extends StatelessWidget {
 const _declarativeCode = '''
 bool saved = false;
 
-ReelText(
-  saved ? 'Saved' : 'Save',
-  options: const ReelTextOptions(
-    direction: ReelTextDirection.up,
+ClipRect(
+  child: SizedBox(
+    height: 58,
+    child: Center(
+      child: ReelText(
+        saved ? 'Saved' : 'Save',
+        options: const ReelTextOptions(
+          direction: ReelTextDirection.up,
+        ),
+        style: const TextStyle(fontSize: 24),
+      ),
+    ),
   ),
-  style: const TextStyle(fontSize: 24),
 );
 
 // Anywhere in your state:
@@ -189,10 +275,14 @@ class _DeclarativePreviewState extends State<_DeclarativePreview> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        ReelText(
-          _saved ? 'Saved' : 'Save',
-          options: const ReelTextOptions(direction: ReelTextDirection.up),
-          style: Studio.display(size: 26, letterSpacing: 0),
+        _RecipeMotionSlot(
+          slotKey: const ValueKey('recipe_declarative_motion_slot'),
+          height: 58,
+          child: ReelText(
+            _saved ? 'Saved' : 'Save',
+            options: const ReelTextOptions(direction: ReelTextDirection.up),
+            style: Studio.display(size: 26, letterSpacing: 0),
+          ),
         ),
         const SizedBox(height: 16),
         StudioButton(
@@ -213,14 +303,29 @@ const _flashCode = '''
 final label = ReelTextController(initialText: 'Copy');
 
 // In build:
-ReelText.controller(controller: label);
+ClipRect(
+  child: SizedBox(
+    width: 58,
+    height: 44,
+    child: Center(
+      child: ReelText.controller(controller: label),
+    ),
+  ),
+);
 
 // On tap:
 label.flash(
   'Copied',
   options: ReelTextFlashOptions(
     revertAfter: const Duration(milliseconds: 1400),
-    enter: ReelTextOptions(colorBuilder: chromatic()),
+    enter: ReelTextOptions(
+      colorBuilder: chromatic(
+        from: 205,
+        spread: 155,
+        saturation: 0.58,
+        lightness: 0.74,
+      ),
+    ),
     exit: const ReelTextOptions(
       direction: ReelTextDirection.down,
     ),
@@ -251,26 +356,28 @@ class _FlashPreviewState extends State<_FlashPreview> {
 
   @override
   Widget build(BuildContext context) {
-    return StudioButton(
+    return _RecipeReelButton(
+      buttonKey: const ValueKey('recipe_flash_button'),
+      slotKey: const ValueKey('recipe_flash_motion_slot'),
+      controller: _label,
+      icon: Icons.copy_rounded,
+      labelWidth: 58,
       onPressed: () {
         _label.flash(
           'Copied',
           options: ReelTextFlashOptions(
-            enter: ReelTextOptions(colorBuilder: chromatic()),
+            enter: ReelTextOptions(
+              colorBuilder: chromatic(
+                from: 205,
+                spread: 155,
+                saturation: 0.58,
+                lightness: 0.74,
+              ),
+            ),
             exit: const ReelTextOptions(direction: ReelTextDirection.down),
           ),
         );
       },
-      icon: Icons.copy_rounded,
-      child: ReelText.controller(
-        controller: _label,
-        style: Studio.mono(
-          size: 12.5,
-          color: Studio.background,
-          weight: FontWeight.w700,
-          letterSpacing: 0.8,
-        ),
-      ),
     );
   }
 }
@@ -281,20 +388,23 @@ class _FlashPreviewState extends State<_FlashPreview> {
 
 const _asyncCode = '''
 final label = ReelTextController(initialText: 'Export');
-ReelTextProgress? handle;
 
-Future<void> export() async {
-  // Spam-safe: re-taps while waiting do not restart the loop.
-  if (handle?.isActive ?? false) {
-    return;
-  }
-  handle = label.startWaiting('Exporting');
-  try {
-    await doExport();
-    handle!.complete('Exported');
-  } catch (_) {
-    handle!.fail('Failed');
-  }
+ClipRect(
+  child: SizedBox(
+    height: 58,
+    child: Center(
+      child: ReelText.controller(controller: label),
+    ),
+  ),
+);
+
+Future<void> export() {
+  return label.runWhile(
+    doExport,
+    waiting: 'Exporting',
+    success: 'Exported',
+    failure: 'Failed',
+  );
 }''';
 
 class _AsyncPreview extends StatefulWidget {
@@ -325,26 +435,32 @@ class _AsyncPreviewState extends State<_AsyncPreview> {
   void _run({required bool succeed}) {
     _finish?.cancel();
     setState(() => _running = true);
-    final handle = _label.startWaiting(
-      'Exporting',
-      options: const ReelTextOptions(color: Studio.amber),
-    );
+    final completer = Completer<void>();
     _finish = Timer(const Duration(milliseconds: 2600), () {
       if (succeed) {
-        handle.complete(
-          'Exported',
-          options: const ReelTextOptions(color: Studio.lime),
-        );
+        completer.complete();
       } else {
-        handle.fail(
-          'Failed',
-          options: const ReelTextOptions(color: Studio.rose),
-        );
-      }
-      if (mounted) {
-        setState(() => _running = false);
+        completer.completeError(StateError('Export failed'));
       }
     });
+    unawaited(
+      _label
+          .runWhile<void>(
+            () => completer.future,
+            waiting: 'Exporting',
+            success: 'Exported',
+            failure: 'Failed',
+            waitingOptions: ReelTextOptions(color: Studio.warning),
+            successOptions: ReelTextOptions(color: Studio.success),
+            failureOptions: ReelTextOptions(color: Studio.danger),
+          )
+          .catchError((Object _) {})
+          .whenComplete(() {
+            if (mounted) {
+              setState(() => _running = false);
+            }
+          }),
+    );
   }
 
   @override
@@ -352,9 +468,13 @@ class _AsyncPreviewState extends State<_AsyncPreview> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        ReelText.controller(
-          controller: _label,
-          style: Studio.display(size: 24, letterSpacing: 0),
+        _RecipeMotionSlot(
+          slotKey: const ValueKey('recipe_async_motion_slot'),
+          height: 58,
+          child: ReelText.controller(
+            controller: _label,
+            style: Studio.display(size: 24, letterSpacing: 0),
+          ),
         ),
         const SizedBox(height: 16),
         Wrap(
@@ -370,7 +490,7 @@ class _AsyncPreviewState extends State<_AsyncPreview> {
             StudioButton(
               onPressed: _running ? null : () => _run(succeed: false),
               filled: false,
-              accent: Studio.rose,
+              accent: Studio.danger,
               child: const Text('Run · failure'),
             ),
           ],
@@ -381,31 +501,32 @@ class _AsyncPreviewState extends State<_AsyncPreview> {
 }
 
 // ---------------------------------------------------------------------------
-// 4. Waiting presets
+// 4. Waiting label
 // ---------------------------------------------------------------------------
 
 const _waitingCode = '''
-// Trailing dots: Sync -> Sync. -> Sync.. -> Sync...
-label.startWaiting('Sync', waiting: const ReelWaiting.ellipsis());
+final label = ReelTextController(initialText: 'Sync');
 
-// The word breathes: a stagger wave sweeps the glyphs, then rests.
-label.startWaiting(
-  'Sync',
-  waiting: const ReelWaiting.wave(rest: Duration(milliseconds: 900)),
+ClipRect(
+  child: SizedBox(
+    height: 56,
+    child: Center(
+      child: ReelText.controller(controller: label),
+    ),
+  ),
 );
 
-// Full control: generate any frame per tick.
-label.startWaiting(
-  'Sync',
-  waiting: ReelWaiting.builder((text, tick) {
-    final r = math.Random(tick);
-    return tick % 4 == 0
-        ? text
-        : text.substring(0, 3) + 'abcxyz'[r.nextInt(6)];
-  }),
-);''';
+final handle = label.startWaiting(
+  'Syncing',
+  waiting: const ReelWaiting.ellipsis(),
+);
 
-enum _WaitingKind { ellipsis, wave, builder }
+try {
+  await sync();
+  handle.complete('Synced');
+} catch (_) {
+  handle.fail('Failed');
+}''';
 
 class _WaitingPreview extends StatefulWidget {
   const _WaitingPreview();
@@ -416,51 +537,55 @@ class _WaitingPreview extends StatefulWidget {
 
 class _WaitingPreviewState extends State<_WaitingPreview> {
   late final ReelTextController _label;
-  _WaitingKind _kind = _WaitingKind.ellipsis;
+  ReelTextProgress? _handle;
+  bool _waiting = false;
 
   @override
   void initState() {
     super.initState();
     _label = ReelTextController(initialText: 'Sync');
-    _start();
   }
 
   @override
   void dispose() {
+    _handle?.cancel();
     _label.dispose();
     super.dispose();
   }
 
   void _start() {
-    switch (_kind) {
-      case _WaitingKind.ellipsis:
-        _label.startWaiting(
-          'Sync',
-          waiting: const ReelWaiting.ellipsis(),
-          options: const ReelTextOptions(color: Studio.lime),
-        );
-      case _WaitingKind.wave:
-        _label.startWaiting(
-          'Sync',
-          waiting: const ReelWaiting.wave(rest: Duration(milliseconds: 900)),
-          options: ReelTextOptions(
-            colorBuilder: chromatic(from: 190, spread: 70),
-          ),
-        );
-      case _WaitingKind.builder:
-        _label.startWaiting(
-          'Sync',
-          waiting: ReelWaiting.builder((text, tick) {
-            if (tick % 4 == 0) {
-              return text;
-            }
-            final r = math.Random(tick * 7919);
-            const set = 'abcdefghijklmnopqrstuvwxyz';
-            return text.substring(0, 3) + set[r.nextInt(set.length)];
-          }, step: const Duration(milliseconds: 280)),
-          options: const ReelTextOptions(color: Studio.violet),
-        );
+    if (_handle?.isActive ?? false) {
+      return;
     }
+    _handle = _label.startWaiting(
+      'Syncing',
+      waiting: const ReelWaiting.ellipsis(),
+      options: ReelTextOptions(color: Studio.warning),
+    );
+    setState(() => _waiting = true);
+  }
+
+  void _complete() {
+    final handle = _handle;
+    if (handle != null && handle.isActive) {
+      handle.complete(
+        'Synced',
+        options: ReelTextOptions(color: Studio.success),
+      );
+    } else {
+      _label.set('Synced', options: ReelTextOptions(color: Studio.success));
+    }
+    setState(() => _waiting = false);
+  }
+
+  void _fail() {
+    final handle = _handle;
+    if (handle != null && handle.isActive) {
+      handle.fail('Failed', options: ReelTextOptions(color: Studio.danger));
+    } else {
+      _label.set('Failed', options: ReelTextOptions(color: Studio.danger));
+    }
+    setState(() => _waiting = false);
   }
 
   @override
@@ -468,28 +593,37 @@ class _WaitingPreviewState extends State<_WaitingPreview> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SizedBox(
+        _RecipeMotionSlot(
+          slotKey: const ValueKey('recipe_waiting_motion_slot'),
           height: 56,
-          child: Center(
-            child: ReelText.controller(
-              controller: _label,
-              style: Studio.display(size: 22, letterSpacing: 0),
-            ),
+          child: ReelText.controller(
+            controller: _label,
+            style: Studio.display(size: 22, letterSpacing: 0),
           ),
         ),
         const SizedBox(height: 12),
-        SegmentedButton<_WaitingKind>(
-          showSelectedIcon: false,
-          segments: const [
-            ButtonSegment(value: _WaitingKind.ellipsis, label: Text('dots')),
-            ButtonSegment(value: _WaitingKind.wave, label: Text('wave')),
-            ButtonSegment(value: _WaitingKind.builder, label: Text('builder')),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          alignment: WrapAlignment.center,
+          children: [
+            StudioButton(
+              onPressed: _waiting ? null : _start,
+              filled: false,
+              child: const Text('Start'),
+            ),
+            StudioButton(
+              onPressed: _waiting ? _complete : null,
+              filled: false,
+              child: const Text('Complete'),
+            ),
+            StudioButton(
+              onPressed: _waiting ? _fail : null,
+              filled: false,
+              accent: Studio.danger,
+              child: const Text('Fail'),
+            ),
           ],
-          selected: {_kind},
-          onSelectionChanged: (s) {
-            setState(() => _kind = s.first);
-            _start();
-          },
         ),
       ],
     );
@@ -504,7 +638,7 @@ const _counterCode = r'''
 int count = 1024;
 bool up = true;
 
-ReelText(
+final counter = ReelText(
   '$count',
   // Only changed digits roll (skipUnchanged: true is the
   // default). Direction follows the delta.
@@ -516,6 +650,11 @@ ReelText(
     fontWeight: FontWeight.w900,
     fontFeatures: [FontFeature.tabularFigures()],
   ),
+);
+
+// Give the roll its own viewport in tight UI.
+ClipRect(
+  child: SizedBox(height: 72, child: Center(child: counter)),
 );
 
 // On taps:
@@ -538,16 +677,20 @@ class _CounterPreviewState extends State<_CounterPreview> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        ReelText(
-          '$_count',
-          options: ReelTextOptions(
-            direction: _up ? ReelTextDirection.up : ReelTextDirection.down,
-          ),
-          style: Studio.mono(
-            size: 40,
-            color: Studio.text,
-            weight: FontWeight.w700,
-            height: 1.1,
+        _RecipeMotionSlot(
+          slotKey: const ValueKey('recipe_counter_motion_slot'),
+          height: 72,
+          child: ReelText(
+            '$_count',
+            options: ReelTextOptions(
+              direction: _up ? ReelTextDirection.up : ReelTextDirection.down,
+            ),
+            style: Studio.mono(
+              size: 40,
+              color: Studio.text,
+              weight: FontWeight.w700,
+              height: 1.1,
+            ),
           ),
         ),
         const SizedBox(height: 12),
@@ -561,7 +704,7 @@ class _CounterPreviewState extends State<_CounterPreview> {
                 _up = false;
               }),
               style: IconButton.styleFrom(
-                side: const BorderSide(color: Studio.border),
+                side: BorderSide(color: Studio.border),
                 foregroundColor: Studio.text,
               ),
               icon: const Icon(Icons.remove_rounded),
@@ -572,7 +715,7 @@ class _CounterPreviewState extends State<_CounterPreview> {
                 _up = true;
               }),
               style: IconButton.styleFrom(
-                side: const BorderSide(color: Studio.border),
+                side: BorderSide(color: Studio.border),
                 foregroundColor: Studio.text,
               ),
               icon: const Icon(Icons.add_rounded),
@@ -591,6 +734,16 @@ class _CounterPreviewState extends State<_CounterPreview> {
 const _spamSafeCode = '''
 final label = ReelTextController(initialText: 'Like');
 var liked = false;
+
+ClipRect(
+  child: SizedBox(
+    width: 46,
+    height: 44,
+    child: Center(
+      child: ReelText.controller(controller: label),
+    ),
+  ),
+);
 
 // On every tap — even very fast ones:
 liked = !liked;
@@ -626,7 +779,13 @@ class _SpamSafePreviewState extends State<_SpamSafePreview> {
 
   @override
   Widget build(BuildContext context) {
-    return StudioButton(
+    return _RecipeReelButton(
+      buttonKey: const ValueKey('recipe_spam_button'),
+      slotKey: const ValueKey('recipe_spam_motion_slot'),
+      controller: _label,
+      accent: Studio.danger,
+      icon: Icons.favorite_rounded,
+      labelWidth: 46,
       onPressed: () {
         _liked = !_liked;
         _label.set(
@@ -634,156 +793,6 @@ class _SpamSafePreviewState extends State<_SpamSafePreview> {
           options: const ReelTextOptions(interrupt: false),
         );
       },
-      accent: Studio.rose,
-      icon: Icons.favorite_rounded,
-      child: ReelText.controller(
-        controller: _label,
-        style: Studio.mono(
-          size: 12.5,
-          color: Studio.background,
-          weight: FontWeight.w700,
-          letterSpacing: 0.8,
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// 7. Reduced motion
-// ---------------------------------------------------------------------------
-
-const _reducedMotionCode = '''
-// Default: when MediaQuery.disableAnimationsOf(context) is true,
-// ReelText snaps to the target text without rolling.
-ReelText(
-  status,
-  respectDisableAnimations: true, // the default
-);
-
-// Opt out if the roll is essential to your design:
-ReelText(status, respectDisableAnimations: false);''';
-
-class _ReducedMotionPreview extends StatefulWidget {
-  const _ReducedMotionPreview();
-
-  @override
-  State<_ReducedMotionPreview> createState() => _ReducedMotionPreviewState();
-}
-
-class _ReducedMotionPreviewState extends State<_ReducedMotionPreview> {
-  bool _reduced = false;
-  bool _on = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final media = MediaQuery.of(context);
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        MediaQuery(
-          data: media.copyWith(disableAnimations: _reduced),
-          child: ReelText(
-            _on ? 'Online' : 'Offline',
-            style: Studio.display(size: 22, letterSpacing: 0),
-          ),
-        ),
-        const SizedBox(height: 14),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Reduced motion',
-              style: TextStyle(color: Studio.muted, fontSize: 12.5),
-            ),
-            const SizedBox(width: 8),
-            Switch(
-              value: _reduced,
-              onChanged: (v) => setState(() => _reduced = v),
-            ),
-          ],
-        ),
-        StudioButton(
-          onPressed: () => setState(() => _on = !_on),
-          filled: false,
-          child: const Text('Toggle status'),
-        ),
-      ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// 8. Text parity, selection, emoji
-// ---------------------------------------------------------------------------
-
-const _paritySelectionEmojiCode = '''
-SelectionArea(
-  child: SizedBox(
-    width: 260,
-    child: ReelText(
-      'Ready 👨‍👩‍👧‍👦 🇰🇿',
-      textAlign: TextAlign.end,
-      style: const TextStyle(fontSize: 24),
-    ),
-  ),
-);''';
-
-class _ParitySelectionEmojiPreview extends StatefulWidget {
-  const _ParitySelectionEmojiPreview();
-
-  @override
-  State<_ParitySelectionEmojiPreview> createState() =>
-      _ParitySelectionEmojiPreviewState();
-}
-
-class _ParitySelectionEmojiPreviewState
-    extends State<_ParitySelectionEmojiPreview> {
-  bool _edited = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final text = _edited ? 'Ready 👨‍👩‍👧‍👦 🇰🇿' : 'Draft 👍🏽';
-    final style = Studio.mono(
-      size: 21,
-      color: Studio.text,
-      weight: FontWeight.w700,
-      height: 1.15,
-    );
-
-    return SelectionArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text('Text', style: Studio.mono(size: 10, color: Studio.faint)),
-          SizedBox(width: 260, child: Text(text, style: style)),
-          const SizedBox(height: 12),
-          Text('ReelText', style: Studio.mono(size: 10, color: Studio.faint)),
-          SizedBox(
-            width: 260,
-            child: ReelText(
-              text,
-              textAlign: TextAlign.end,
-              options: const ReelTextOptions(
-                duration: Duration(milliseconds: 180),
-                stagger: Duration(milliseconds: 16),
-                exitOffset: Duration.zero,
-              ),
-              style: style,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: StudioButton(
-              onPressed: () => setState(() => _edited = !_edited),
-              filled: false,
-              child: const Text('Edit text'),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

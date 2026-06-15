@@ -1,11 +1,11 @@
 {
-    "name": "reel_text_example",
-    "short_name": "reel_text_example",
+    "name": "reel_text",
+    "short_name": "reel_text",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#202124",
+    "theme_color": "#202124",
+    "description": "A tactile Flutter text roll animation package for labels, counters, status text, command buttons, rich text, and editable text.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

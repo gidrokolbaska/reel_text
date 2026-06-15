@@ -17,7 +17,7 @@ imperative `flash()` calls are safe for rapid button taps.
 
 ```yaml
 dependencies:
-  reel_text: ^0.0.1
+  reel_text: ^0.1.0
 ```
 
 ## Quick Start
@@ -75,38 +75,39 @@ label.dispose();
 revert timer on repeated calls, and rolls back once after the last flash.
 Calling `set()` cancels a pending revert.
 
-For async operations, use `startProgress()` and resolve the returned handle:
+For async operations, use `runWhile()`:
 
 ```dart
 final exportLabel = ReelTextController(initialText: 'Export');
 
-final progress = exportLabel.startProgress(
-  'Exportaa',
-  frames: const ['Exportee', 'Exportii', 'Exportoo'],
-  interval: const Duration(milliseconds: 160),
-  options: ReelTextOptions(colorBuilder: chromatic(from: 36, spread: 54)),
+await exportLabel.runWhile(
+  exportFile,
+  waiting: 'Exporting',
+  success: 'Exported',
+  failure: 'Failed',
+  waitingOptions: const ReelTextOptions(color: Color(0xffffb84d)),
+  successOptions: const ReelTextOptions(color: Color(0xff38bdf8)),
+  failureOptions: const ReelTextOptions(color: Color(0xffe11d48)),
 );
-
-try {
-  await exportFile();
-  progress.complete(
-    'Exported',
-    options: const ReelTextOptions(color: Color(0xff38bdf8)),
-  );
-} catch (_) {
-  progress.fail(
-    'Error',
-    options: const ReelTextOptions(color: Color(0xffe11d48)),
-  );
-}
 ```
 
-The progress loop keeps rolling until the handle is completed, failed, or
-cancelled. Matching glyphs stay fixed by default, so `Export -> Exportaa ->
-Exportee -> Exportii` continuously animates the two uncertain suffix slots while
-waiting. `complete('Exported')` then performs the normal diff into the final
-word. Each emitted target accepts its own `ReelTextOptions`, so intermediate
-progress, success, and error states can use different color modes.
+`runWhile()` starts the waiting loop before invoking the operation, emits the
+success label on completion, and emits the failure label before rethrowing an
+error. For lower-level frame control, `startProgress()` and `startWaiting()`
+still return a `ReelTextProgress` handle.
+
+For rotating labels, use `ReelText.sequence` instead of managing a controller
+and timer yourself:
+
+```dart
+ReelText.sequence(
+  values: const ['CRAFT', 'DRAFT', 'DRIFT'],
+  interval: const Duration(milliseconds: 2400),
+  optionsBuilder: (index, value) => ReelTextOptions(
+    direction: index.isEven ? ReelTextDirection.up : ReelTextDirection.down,
+  ).withChromatic(from: 70 + index * 54),
+);
+```
 
 ### Waiting (idle) animations
 
@@ -138,10 +139,10 @@ label.startWaiting(
   waiting: const ReelWaiting.wave(rest: Duration(milliseconds: 1200)),
 );
 
-// Explicit frames or a generator for full control (scrambles, spinners, ...).
+// Scramble a suffix while periodically returning to the readable label.
 label.startWaiting(
   'Exporting',
-  waiting: ReelWaiting.builder((text, tick) => tick.isEven ? text : '$text…'),
+  waiting: const ReelWaiting.scramble(protectedPrefix: 6),
 );
 ```
 
@@ -162,8 +163,9 @@ text instantly instead of rolling. Opt out per widget with
 
 `ReelText` keeps the same single-line layout box as Flutter `Text` for the
 current target string, including during a roll. It does not add extra vertical
-padding for the animation. `textAlign` is honored when the widget receives
-bounded width:
+padding for the animation. `textAlign` is visible when a parent gives the widget
+a real width, such as `SizedBox` or `Expanded`; loose max-width constraints keep
+the intrinsic text width:
 
 ```dart
 const SizedBox(
@@ -178,9 +180,47 @@ joined emoji sequences are treated as whole glyph clusters:
 
 ```dart
 SelectionArea(
-  child: ReelText('Ready 👨‍👩‍👧‍👦 🇰🇿 👍🏽'),
+  child: ReelText('Ready 👨‍👩‍👧‍👦🧑🏽‍💻👍🏽'),
 );
 ```
+
+Use `ReelText.rich` when the changing phrase needs inline styles. The widget
+still rolls by grapheme cluster and exposes one selectable plain-text surface:
+
+```dart
+ReelText.rich(
+  const TextSpan(
+    children: [
+      TextSpan(text: 'Draft: ', style: TextStyle(color: Colors.redAccent)),
+      TextSpan(text: 'rewrite with evidence'),
+    ],
+  ),
+);
+```
+
+For editable surfaces, use `ReelTextEditingController`. It extends Flutter's
+`TextEditingController` and renders temporary replacements inside the same
+`EditableText` layout, so caret, selection, wrapping, and scroll geometry stay
+owned by Flutter:
+
+```dart
+final controller = ReelTextEditingController(text: 'Please recieve teh file.');
+
+controller.animateReplacements(
+  replacements: [
+    const ReelTextEditReplacement(
+      range: TextRange(start: 7, end: 14),
+      replacement: 'receive',
+      options: ReelTextOptions(color: Color(0xff84cc16)),
+    ),
+  ],
+  commitAfter: const Duration(milliseconds: 760),
+);
+```
+
+The example editor uses this controller with a `SpellCheckService` pipeline:
+LanguageTool for online suggestions, Flutter's native spellcheck service where
+the platform exposes one, and a deterministic fallback for offline demo text.
 
 ### Dynamic fonts
 
@@ -222,9 +262,10 @@ cd example
 flutter run
 ```
 
-The example is a three-page studio: **Showcase** is a designed demo of the hero
-roll, the three waiting presets, async operation handles, counters, and a
-motion desk; **Recipes** pairs live, working previews with copy-ready code for
-the most common situations, including layout parity, selection, and emoji;
-**AI Doc** simulates a neural editor revising a large selectable multi-page
-document with short animated phrases.
+The example has three pages: **Home** is a self-running, choreographed
+presentation that walks through the core capabilities one focal animation at a
+time — brand reveal, state labels, counters, waiting presets, the async
+lifecycle, and inline corrections — backed by a few tap-anywhere live demos;
+**Recipes** pairs live, working previews with copy-ready code for the most
+common situations, including layout parity, selection, and emoji; **Editor**
+shows a selectable document where typo corrections roll inline in the body copy.

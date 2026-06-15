@@ -36,11 +36,11 @@ class _CodeViewState extends State<CodeView> {
     await Clipboard.setData(ClipboardData(text: widget.code));
     _copy.flash(
       'copied',
-      options: const ReelTextFlashOptions(
+      options: ReelTextFlashOptions(
         enter: ReelTextOptions(
           duration: Duration(milliseconds: 220),
           stagger: Duration(milliseconds: 20),
-          color: Studio.lime,
+          color: Studio.success,
         ),
         exit: ReelTextOptions(
           duration: Duration(milliseconds: 220),
@@ -95,7 +95,7 @@ class _CodeViewState extends State<CodeView> {
               ],
             ),
           ),
-          const Divider(height: 1, color: Studio.border),
+          Divider(height: 1, color: Studio.border),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.all(16),
@@ -111,13 +111,6 @@ class _HighlightedDart extends StatelessWidget {
   const _HighlightedDart({required this.code});
 
   final String code;
-
-  static const _keyword = Color(0xffc792ea);
-  static const _string = Color(0xffc3e88d);
-  static const _comment = Color(0xff5c6370);
-  static const _type = Color(0xff82aaff);
-  static const _number = Color(0xfff78c6c);
-  static const _plain = Color(0xffd6d3e0);
 
   static final _pattern = RegExp(
     r"(//[^\n]*)"
@@ -139,16 +132,16 @@ class _HighlightedDart extends StatelessWidget {
         spans.add(TextSpan(text: code.substring(cursor, match.start)));
       }
       final color = match.group(1) != null
-          ? _comment
+          ? StudioSyntax.comment
           : match.group(2) != null
-          ? _string
+          ? StudioSyntax.string
           : match.group(3) != null
-          ? _keyword
+          ? StudioSyntax.keyword
           : match.group(4) != null
-          ? _keyword
+          ? StudioSyntax.keyword
           : match.group(5) != null
-          ? _number
-          : _type;
+          ? StudioSyntax.number
+          : StudioSyntax.type;
       final style = TextStyle(
         color: color,
         fontStyle: match.group(1) != null ? FontStyle.italic : null,
@@ -161,7 +154,7 @@ class _HighlightedDart extends StatelessWidget {
     }
     return SelectableText.rich(
       TextSpan(
-        style: Studio.mono(size: 12.5, color: _plain, height: 1.55),
+        style: Studio.mono(size: 12.5, color: StudioSyntax.plain, height: 1.55),
         children: spans,
       ),
     );

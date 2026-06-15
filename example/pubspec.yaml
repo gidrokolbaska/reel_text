@@ -9,7 +9,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_svg: ^2.3.0
   google_fonts: ^8.1.0
+  http: ^1.6.0
   reel_text:
     path: ..
   url_launcher: ^6.3.2
@@ -21,3 +23,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/icons/pubdev.svg
+    - assets/icons/github.svg
+    - web/icons/Icon-192.png

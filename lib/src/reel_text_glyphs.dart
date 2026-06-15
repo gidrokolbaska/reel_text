@@ -3,15 +3,13 @@ part of 'reel_text.dart';
 class _SettledReelText extends StatelessWidget {
   const _SettledReelText({
     super.key,
-    required this.text,
-    required this.style,
+    required this.content,
     required this.textDirection,
     required this.locale,
     required this.strutStyle,
   });
 
-  final String text;
-  final TextStyle style;
+  final _ReelTextContent content;
   final TextDirection textDirection;
   final Locale? locale;
   final StrutStyle? strutStyle;
@@ -20,31 +18,48 @@ class _SettledReelText extends StatelessWidget {
   Widget build(BuildContext context) {
     final runMetrics = _TextRunMetrics.of(
       context: context,
-      style: style,
+      span: content.span,
       textDirection: textDirection,
       locale: locale,
       strutStyle: strutStyle,
-      text: text,
+      text: content.plainText,
     );
-    return SizedBox(
-      height: runMetrics.height,
-      child: Row(
-        key: const ValueKey('reel_text_settled_glyphs'),
-        mainAxisSize: MainAxisSize.min,
-        textDirection: textDirection,
-        children: [
-          for (final (index, glyph) in text.characters.indexed)
-            _SettledGlyphSlot(
-              glyph,
-              width: runMetrics.widthAt(index),
-              height: runMetrics.height,
-              style: style,
-              textDirection: textDirection,
-              locale: locale,
-              strutStyle: strutStyle,
-            ),
-        ],
-      ),
+    final glyphRow = Row(
+      key: const ValueKey('reel_text_settled_glyphs'),
+      mainAxisSize: MainAxisSize.min,
+      textDirection: textDirection,
+      children: [
+        for (final (index, glyph) in content.glyphs.indexed)
+          _SettledGlyphSlot(
+            glyph.text,
+            width: runMetrics.widthAt(index),
+            height: runMetrics.height,
+            style: glyph.style,
+            textDirection: textDirection,
+            locale: locale,
+            strutStyle: strutStyle,
+          ),
+      ],
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final viewportWidth = constraints.hasBoundedWidth
+            ? math.min(runMetrics.width, constraints.maxWidth)
+            : runMetrics.width;
+        return SizedBox(
+          width: viewportWidth,
+          height: runMetrics.height,
+          child: OverflowBox(
+            alignment: _inlineStartAlignment(textDirection),
+            minWidth: 0,
+            maxWidth: double.infinity,
+            minHeight: runMetrics.height,
+            maxHeight: runMetrics.height,
+            child: glyphRow,
+          ),
+        );
+      },
     );
   }
 }
@@ -94,8 +109,9 @@ class _GlyphSlot extends StatelessWidget {
     required this.slot,
     required this.fromMetrics,
     required this.toMetrics,
+    required this.fromContent,
+    required this.toContent,
     required this.progressMs,
-    required this.style,
     required this.textDirection,
     required this.locale,
     required this.strutStyle,
@@ -104,8 +120,9 @@ class _GlyphSlot extends StatelessWidget {
   final _SlotPlan slot;
   final _TextRunMetrics fromMetrics;
   final _TextRunMetrics toMetrics;
+  final _ReelTextContent fromContent;
+  final _ReelTextContent toContent;
   final double progressMs;
-  final TextStyle style;
   final TextDirection textDirection;
   final Locale? locale;
   final StrutStyle? strutStyle;
@@ -117,6 +134,11 @@ class _GlyphSlot extends StatelessWidget {
       toWidth: slot.to.isEmpty ? 0 : toMetrics.widthAt(slot.index),
       height: math.max(fromMetrics.height, toMetrics.height),
     );
+    final fromStyle = fromContent.glyphAt(slot.index)?.style;
+    final toStyle = toContent.glyphAt(slot.index)?.style;
+    final effectiveToStyle = toStyle ?? fromStyle ?? const TextStyle();
+    final travelDistance =
+        metrics.height + _verticalSlotBleed(metrics.height) * 2;
 
     if (!slot.changed) {
       return SizedBox(
@@ -126,19 +148,26 @@ class _GlyphSlot extends StatelessWidget {
           slot.to,
           width: metrics.toWidth,
           height: metrics.height,
-          style: style,
+          style: effectiveToStyle,
           textDirection: textDirection,
           locale: locale,
           strutStyle: strutStyle,
         ),
       );
     }
-    final width = metrics.toWidth;
+    final width = ui.lerpDouble(
+      metrics.fromWidth,
+      metrics.toWidth,
+      slot.widthT(progressMs),
+    )!;
     final textColor =
-        style.color ?? DefaultTextStyle.of(context).style.color ?? Colors.black;
+        effectiveToStyle.color ??
+        DefaultTextStyle.of(context).style.color ??
+        Colors.black;
     final incomingColor = slot.color == null
         ? textColor
         : Color.lerp(slot.color, textColor, slot.colorT(progressMs))!;
+    final effectiveFromStyle = fromStyle ?? effectiveToStyle;
 
     return ClipRect(
       clipper: const _VerticalSlotClipper(),
@@ -154,14 +183,14 @@ class _GlyphSlot extends StatelessWidget {
               Opacity(
                 opacity: slot.outOpacity(progressMs),
                 child: Transform.translate(
-                  offset: Offset(0, slot.outY(progressMs, metrics.height)),
+                  offset: Offset(0, slot.outY(progressMs, travelDistance)),
                   child: Transform.rotate(
                     angle: -slot.tiltRadians * slot.outT(progressMs),
                     child: _GlyphFace(
                       slot.from,
                       width: metrics.fromWidth,
                       height: metrics.height,
-                      style: style,
+                      style: effectiveFromStyle,
                       textDirection: textDirection,
                       locale: locale,
                       strutStyle: strutStyle,
@@ -171,14 +200,14 @@ class _GlyphSlot extends StatelessWidget {
               ),
             if (slot.to.isNotEmpty)
               Transform.translate(
-                offset: Offset(0, slot.inY(progressMs, metrics.height)),
+                offset: Offset(0, slot.inY(progressMs, travelDistance)),
                 child: Transform.rotate(
                   angle: slot.tiltRadians * (1 - slot.inT(progressMs)),
                   child: _GlyphFace(
                     slot.to,
                     width: metrics.toWidth,
                     height: metrics.height,
-                    style: style.copyWith(color: incomingColor),
+                    style: effectiveToStyle.copyWith(color: incomingColor),
                     textDirection: textDirection,
                     locale: locale,
                     strutStyle: strutStyle,
@@ -198,17 +227,20 @@ class _VerticalSlotClipper extends CustomClipper<Rect> {
   @override
   Rect getClip(Size size) {
     const horizontalBleed = 100000.0;
+    final verticalBleed = _verticalSlotBleed(size.height);
     return Rect.fromLTRB(
       -horizontalBleed,
-      0,
+      -verticalBleed,
       size.width + horizontalBleed,
-      size.height,
+      size.height + verticalBleed,
     );
   }
 
   @override
   bool shouldReclip(covariant _VerticalSlotClipper oldClipper) => false;
 }
+
+double _verticalSlotBleed(double height) => math.max(12, height * 0.38);
 
 class _GlyphFace extends StatelessWidget {
   const _GlyphFace(

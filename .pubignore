@@ -1,8 +1,12 @@
 *.iml
 .dart_tool/
 .flutter-plugins-dependencies
+.agents/
 .idea/
 build/
 coverage/
 docs/
 pubspec.lock
+*-audit.log
+web-home-redesign-*.png
+windows-*.png

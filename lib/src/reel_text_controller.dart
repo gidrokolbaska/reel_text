@@ -178,6 +178,44 @@ class ReelTextController extends ChangeNotifier {
           interval: waiting.step ?? _steadyStep(base),
           options: base.copyWith(interrupt: false),
         );
+      case _ReelWaitingKind.scramble:
+        final base = options ?? _tickWaitingDefaults;
+        return _startFrameLoop(
+          initial: text,
+          frameAt: (tick) => _scrambleFrame(text, tick, waiting),
+          interval: waiting.step ?? _steadyStep(base),
+          options: base.copyWith(interrupt: false),
+        );
+    }
+  }
+
+  /// Runs [operation] while showing a waiting label, then emits success/failure.
+  ///
+  /// The operation is invoked after the waiting loop starts. On success the
+  /// returned value is forwarded and [success] is emitted. On failure [failure]
+  /// is emitted and the original error is rethrown.
+  Future<T> runWhile<T>(
+    FutureOr<T> Function() operation, {
+    required String waiting,
+    required String success,
+    required String failure,
+    ReelWaiting waitingPreset = const ReelWaiting.ellipsis(),
+    ReelTextOptions? waitingOptions,
+    ReelTextOptions? successOptions,
+    ReelTextOptions? failureOptions,
+  }) async {
+    final handle = startWaiting(
+      waiting,
+      waiting: waitingPreset,
+      options: waitingOptions,
+    );
+    try {
+      final result = await operation();
+      handle.complete(success, options: successOptions);
+      return result;
+    } catch (_) {
+      handle.fail(failure, options: failureOptions);
+      rethrow;
     }
   }
 
@@ -193,6 +231,37 @@ class ReelTextController extends ChangeNotifier {
     return Duration(
       milliseconds: rollMs + options.exitOffset.inMilliseconds + fadeMs + 160,
     );
+  }
+
+  static String _scrambleFrame(String text, int tick, ReelWaiting waiting) {
+    if (tick % waiting.holdEvery == 0) {
+      return text;
+    }
+
+    final glyphs = text.characters.toList();
+    if (glyphs.isEmpty) {
+      return text;
+    }
+    final firstMutable = math.min(waiting.protectedPrefix, glyphs.length);
+    if (firstMutable == glyphs.length) {
+      return text;
+    }
+
+    final alphabet = waiting.alphabet.characters.toList();
+    final mutableIndexes = <int>[
+      for (var i = firstMutable; i < glyphs.length; i++) i,
+    ];
+    final random = math.Random(tick * 9973 + glyphs.length * 37);
+    mutableIndexes.shuffle(random);
+
+    for (final index in mutableIndexes.take(waiting.changedGlyphs)) {
+      var next = alphabet[random.nextInt(alphabet.length)];
+      if (alphabet.length > 1 && next == glyphs[index]) {
+        next = alphabet[(alphabet.indexOf(next) + 1) % alphabet.length];
+      }
+      glyphs[index] = next;
+    }
+    return glyphs.join();
   }
 
   ReelTextProgress _startFrameLoop({

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,6 +25,28 @@ void main() {
     expect(replaced.colorBuilder, isNull);
   });
 
+  test('options helpers replace color modes and reverse direction', () {
+    final base = ReelTextOptions(
+      direction: ReelTextDirection.up,
+      colorBuilder: chromatic(from: 20),
+    );
+
+    final tinted = base.withColor(const Color(0xff38bdf8));
+    expect(tinted.color, const Color(0xff38bdf8));
+    expect(tinted.colorBuilder, isNull);
+    expect(tinted.direction, ReelTextDirection.up);
+
+    final chromaticOptions = tinted.withChromatic(from: 40, spread: 80);
+    expect(chromaticOptions.color, isNull);
+    expect(chromaticOptions.colorBuilder!(0, 2), isA<Color>());
+
+    final plain = chromaticOptions.withoutColor();
+    expect(plain.color, isNull);
+    expect(plain.colorBuilder, isNull);
+
+    expect(plain.reversed().direction, ReelTextDirection.down);
+  });
+
   testWidgets('renders settled text without animation on first build', (
     tester,
   ) async {
@@ -35,6 +59,51 @@ void main() {
 
     expect(find.bySemanticsLabel('Copy'), findsOneWidget);
     expect(find.byKey(const ValueKey('reel_text_settled')), findsOneWidget);
+  });
+
+  testWidgets('sequence cycles values on its interval', (tester) async {
+    await tester.pumpWidget(
+      const Directionality(
+        textDirection: TextDirection.ltr,
+        child: ReelText.sequence(
+          values: ['One', 'Two'],
+          interval: Duration(milliseconds: 50),
+        ),
+      ),
+    );
+
+    expect(find.bySemanticsLabel('One'), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 60));
+    expect(find.bySemanticsLabel('Two'), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 60));
+    expect(find.bySemanticsLabel('One'), findsOneWidget);
+  });
+
+  testWidgets('sequence optionsBuilder receives the next index and value', (
+    tester,
+  ) async {
+    final calls = <String>[];
+
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: ReelText.sequence(
+          values: const ['A', 'B'],
+          interval: const Duration(milliseconds: 50),
+          optionsBuilder: (index, value) {
+            calls.add('$index:$value');
+            return const ReelTextOptions(duration: Duration(milliseconds: 20));
+          },
+        ),
+      ),
+    );
+
+    expect(calls, isEmpty);
+
+    await tester.pump(const Duration(milliseconds: 60));
+    expect(calls, ['1:B']);
   });
 
   testWidgets('first settled frame keeps the full text run width', (
@@ -95,7 +164,48 @@ void main() {
     );
   });
 
-  testWidgets('rolling layout matches target Text size exactly', (
+  testWidgets('settled layout clamps to bounded width without flex overflow', (
+    tester,
+  ) async {
+    const reelKey = ValueKey('reel_bounded_settled');
+    const boxWidth = 136.0;
+    const text = 'SHOWCASE';
+    const style = TextStyle(
+      fontSize: 22,
+      fontWeight: FontWeight.w900,
+      letterSpacing: 2.2,
+    );
+
+    final painter = TextPainter(
+      text: const TextSpan(text: text, style: style),
+      textDirection: TextDirection.ltr,
+      maxLines: 1,
+    )..layout();
+    expect(painter.size.width, greaterThan(boxWidth));
+
+    await tester.pumpWidget(
+      const Directionality(
+        textDirection: TextDirection.ltr,
+        child: Center(
+          child: SizedBox(
+            width: boxWidth,
+            child: ReelText(text, key: reelKey, style: style),
+          ),
+        ),
+      ),
+    );
+
+    expect(tester.takeException(), isNull);
+    expect(tester.getSize(find.byKey(reelKey)).width, boxWidth);
+    expect(
+      tester
+          .getSize(find.byKey(const ValueKey('reel_text_settled_glyphs')))
+          .width,
+      greaterThan(boxWidth),
+    );
+  });
+
+  testWidgets('rolling layout width interpolates before matching target Text', (
     tester,
   ) async {
     const reelKey = ValueKey('reel_exact_size');
@@ -127,14 +237,70 @@ void main() {
     }
 
     await tester.pumpWidget(frame('AI', 'AI writes ✨'));
+    final initialWidth = tester.getSize(find.byKey(reelKey)).width;
+
     await tester.pumpWidget(frame('AI writes ✨', 'AI writes ✨'));
     await tester.pump(const Duration(milliseconds: 80));
 
     expect(find.byKey(const ValueKey('reel_text_rolling')), findsOneWidget);
-    expect(
-      tester.getSize(find.byKey(reelKey)),
-      tester.getSize(find.byKey(textKey)),
+    final rollingWidth = tester.getSize(find.byKey(reelKey)).width;
+    final targetSize = tester.getSize(find.byKey(textKey));
+
+    expect(rollingWidth, greaterThan(initialWidth));
+    expect(rollingWidth, lessThan(targetSize.width));
+
+    await tester.pumpAndSettle();
+    expect(tester.getSize(find.byKey(reelKey)), targetSize);
+  });
+
+  testWidgets('inserted glyph widths expand during a roll', (tester) async {
+    const reelKey = ValueKey('reel_interpolated_width');
+    const style = TextStyle(
+      fontSize: 48,
+      fontWeight: FontWeight.w900,
+      letterSpacing: 0.2,
     );
+    const options = ReelTextOptions(
+      duration: Duration(milliseconds: 200),
+      stagger: Duration.zero,
+      exitOffset: Duration.zero,
+      curve: Curves.linear,
+      bounce: 0,
+      skipUnchanged: false,
+    );
+
+    double textWidth(String text) {
+      final painter = TextPainter(
+        text: TextSpan(text: text, style: style),
+        textDirection: TextDirection.ltr,
+        maxLines: 1,
+      )..layout();
+      return painter.size.width;
+    }
+
+    Widget frame(String text) {
+      return Directionality(
+        textDirection: TextDirection.ltr,
+        child: Center(
+          child: ReelText(text, key: reelKey, style: style, options: options),
+        ),
+      );
+    }
+
+    final fromWidth = textWidth('i');
+    final toWidth = textWidth('iii');
+
+    await tester.pumpWidget(frame('i'));
+    await tester.pumpWidget(frame('iii'));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final rollingWidth = tester
+        .getSize(find.byKey(const ValueKey('reel_text_rolling')))
+        .width;
+
+    expect(tester.getSize(find.byKey(reelKey)).width, rollingWidth);
+    expect(rollingWidth, greaterThan(fromWidth));
+    expect(rollingWidth, lessThan(toWidth));
   });
 
   testWidgets('complex emoji clusters match Text size and roll safely', (
@@ -142,7 +308,7 @@ void main() {
   ) async {
     const reelKey = ValueKey('reel_emoji_size');
     const textKey = ValueKey('text_emoji_size');
-    const text = 'Launch 👨‍👩‍👧‍👦 🇰🇿 👍🏽';
+    const text = 'Launch 👨‍👩‍👧‍👦 🧑🏽‍💻 👍🏽 🚀 ✨';
     const style = TextStyle(fontSize: 30, fontWeight: FontWeight.w700);
 
     Widget frame(String reelText) {
@@ -184,6 +350,48 @@ void main() {
     );
   });
 
+  testWidgets('dense emoji clusters keep Text size after a large edit', (
+    tester,
+  ) async {
+    const reelKey = ValueKey('reel_many_emoji_size');
+    const textKey = ValueKey('text_many_emoji_size');
+    const text = 'Ready 👨‍👩‍👧‍👦 🧑🏽‍💻 👩‍🔬 🧪 🚀 ✨ ✅ ⚠️ 👍🏽';
+    const style = TextStyle(fontSize: 26, fontWeight: FontWeight.w800);
+    const options = ReelTextOptions(
+      duration: Duration(milliseconds: 80),
+      stagger: Duration.zero,
+      exitOffset: Duration.zero,
+    );
+
+    Widget frame(String reelText) {
+      return Directionality(
+        textDirection: TextDirection.ltr,
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ReelText(reelText, key: reelKey, style: style, options: options),
+              ExcludeSemantics(
+                child: Text(text, key: textKey, style: style),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    await tester.pumpWidget(frame('Draft 👍🏽'));
+    await tester.pumpWidget(frame(text));
+    await tester.pump(const Duration(milliseconds: 40));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(
+      tester.getSize(find.byKey(reelKey)),
+      tester.getSize(find.byKey(textKey)),
+    );
+  });
+
   testWidgets('exposes one full selectable text surface inside SelectionArea', (
     tester,
   ) async {
@@ -213,6 +421,285 @@ void main() {
     expect(paragraph.registrar, isNotNull);
   });
 
+  testWidgets('selection surface preserves bounded textAlign constraints', (
+    tester,
+  ) async {
+    const boxKey = ValueKey('reel_text_selection_alignment_box');
+    const text = 'Go 👍🏽';
+    const style = TextStyle(fontSize: 28, fontWeight: FontWeight.w700);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: SelectionArea(
+          child: Center(
+            child: SizedBox(
+              key: boxKey,
+              width: 260,
+              child: ReelText(text, textAlign: TextAlign.end, style: style),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final box = tester.getRect(find.byKey(boxKey));
+    final visualGlyph = tester.getRect(find.text('👍🏽'));
+
+    expect(visualGlyph.right, closeTo(box.right, 0.01));
+  });
+
+  testWidgets('rich text keeps styled spans selectable as one text run', (
+    tester,
+  ) async {
+    const reelKey = ValueKey('reel_rich_size');
+    const textKey = ValueKey('text_rich_size');
+    const plainText = 'Draft -> Evidence-backed rewrite';
+    const span = TextSpan(
+      children: [
+        TextSpan(
+          text: 'Draft',
+          style: TextStyle(color: Colors.redAccent),
+        ),
+        TextSpan(text: ' -> '),
+        TextSpan(
+          text: 'Evidence-backed rewrite',
+          style: TextStyle(
+            color: Colors.lightGreenAccent,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
+    );
+    const style = TextStyle(fontSize: 24, height: 1.25);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SelectionArea(
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const ReelText.rich(span, key: reelKey, style: style),
+                ExcludeSemantics(
+                  child: RichText(
+                    key: textKey,
+                    text: const TextSpan(style: style, children: [span]),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.bySemanticsLabel(plainText), findsOneWidget);
+    expect(
+      tester.getSize(find.byKey(reelKey)),
+      tester.getSize(find.byKey(textKey)),
+    );
+
+    final paragraph = tester.renderObject<RenderParagraph>(
+      find.byKey(const ValueKey('reel_text_selection_surface')),
+    );
+    expect(paragraph.text.toPlainText(), plainText);
+    expect(paragraph.registrar, isNotNull);
+  });
+
+  testWidgets('editing controller renders replacements inside EditableText', (
+    tester,
+  ) async {
+    final controller = ReelTextEditingController(
+      text: 'Please recieve teh adress.',
+    );
+    final focusNode = FocusNode();
+    addTearDown(controller.dispose);
+    addTearDown(focusNode.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Directionality(
+          textDirection: TextDirection.ltr,
+          child: EditableText(
+            controller: controller,
+            focusNode: focusNode,
+            style: const TextStyle(fontSize: 18),
+            cursorColor: Colors.green,
+            backgroundCursorColor: Colors.black,
+          ),
+        ),
+      ),
+    );
+
+    controller.beginReplacements([
+      const ReelTextEditReplacement(
+        range: TextRange(start: 7, end: 14),
+        replacement: 'receive',
+        key: ValueKey('inline_recieve'),
+        options: ReelTextOptions(
+          duration: Duration(milliseconds: 240),
+          stagger: Duration(milliseconds: 16),
+        ),
+      ),
+      const ReelTextEditReplacement(
+        range: TextRange(start: 15, end: 18),
+        replacement: 'the',
+        key: ValueKey('inline_teh'),
+        options: ReelTextOptions(
+          duration: Duration(milliseconds: 240),
+          stagger: Duration(milliseconds: 16),
+        ),
+      ),
+    ]);
+    await tester.pump();
+
+    final inlineCorrection = find.descendant(
+      of: find.byType(EditableText),
+      matching: find.byKey(const ValueKey('inline_recieve')),
+    );
+    expect(inlineCorrection, findsOneWidget);
+    expect(controller.text, 'Please recieve teh adress.');
+
+    controller.animateReplacements();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 16));
+
+    final animatedCorrection = tester.widget<ReelText>(inlineCorrection);
+    expect(animatedCorrection.controller!.value, 'receive');
+    expect(find.byKey(const ValueKey('reel_text_rolling')), findsWidgets);
+    expect(controller.replacementText(), 'Please receive the adress.');
+  });
+
+  testWidgets('editing controller animates replacements and auto commits', (
+    tester,
+  ) async {
+    final controller = ReelTextEditingController(text: 'Fix teh typo.');
+    addTearDown(controller.dispose);
+
+    controller.animateReplacements(
+      replacements: [
+        const ReelTextEditReplacement(
+          range: TextRange(start: 4, end: 7),
+          replacement: 'the',
+          options: ReelTextOptions(
+            duration: Duration(milliseconds: 20),
+            stagger: Duration.zero,
+          ),
+        ),
+      ],
+      commitAfter: const Duration(milliseconds: 40),
+    );
+
+    expect(controller.hasActiveReplacements, isTrue);
+    expect(controller.replacementText(), 'Fix the typo.');
+
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(controller.text, 'Fix the typo.');
+    expect(controller.hasActiveReplacements, isFalse);
+  });
+
+  testWidgets(
+    'editing controller rolls newly provided replacements after mounting',
+    (tester) async {
+      final controller = ReelTextEditingController(text: 'Fix teh typo.');
+      final focusNode = FocusNode();
+      addTearDown(controller.dispose);
+      addTearDown(focusNode.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: EditableText(
+            controller: controller,
+            focusNode: focusNode,
+            style: const TextStyle(fontSize: 18),
+            cursorColor: Colors.green,
+            backgroundCursorColor: Colors.black,
+          ),
+        ),
+      );
+
+      controller.animateReplacements(
+        replacements: [
+          const ReelTextEditReplacement(
+            range: TextRange(start: 4, end: 7),
+            replacement: 'the',
+            key: ValueKey('inline_teh_delayed'),
+            options: ReelTextOptions(
+              duration: Duration(milliseconds: 160),
+              stagger: Duration.zero,
+            ),
+          ),
+        ],
+      );
+
+      await tester.pump();
+      final inlineCorrection = find.descendant(
+        of: find.byType(EditableText),
+        matching: find.byKey(const ValueKey('inline_teh_delayed')),
+      );
+      expect(inlineCorrection, findsOneWidget);
+
+      await tester.pump(const Duration(milliseconds: 16));
+
+      expect(
+        find.descendant(
+          of: inlineCorrection,
+          matching: find.byKey(const ValueKey('reel_text_rolling')),
+        ),
+        findsOneWidget,
+      );
+      expect(controller.text, 'Fix teh typo.');
+      expect(controller.replacementText(), 'Fix the typo.');
+    },
+  );
+
+  testWidgets('editing controller spanBuilder customizes resting text', (
+    tester,
+  ) async {
+    final controller = ReelTextEditingController(
+      text: 'warn',
+      spanBuilder: (context, text, style, withComposing) {
+        return TextSpan(
+          style: style,
+          children: [
+            TextSpan(
+              text: text,
+              style: style.copyWith(decoration: TextDecoration.underline),
+            ),
+          ],
+        );
+      },
+    );
+    final focusNode = FocusNode();
+    addTearDown(controller.dispose);
+    addTearDown(focusNode.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: EditableText(
+          controller: controller,
+          focusNode: focusNode,
+          style: const TextStyle(fontSize: 18),
+          cursorColor: Colors.green,
+          backgroundCursorColor: Colors.black,
+        ),
+      ),
+    );
+
+    final editableFinder = find.byType(EditableText);
+    final editable = tester.widget<EditableText>(editableFinder);
+    final span = editable.controller.buildTextSpan(
+      context: tester.element(editableFinder),
+      style: editable.style,
+      withComposing: false,
+    );
+    final child = span.children!.single as TextSpan;
+
+    expect(child.text, 'warn');
+    expect(child.style?.decoration, TextDecoration.underline);
+  });
+
   testWidgets('textAlign end aligns settled glyphs inside bounded width', (
     tester,
   ) async {
@@ -240,6 +727,92 @@ void main() {
 
     expect(lastGlyph.right, closeTo(box.right, 0.01));
   });
+
+  testWidgets('textAlign end keeps Text-like size under loose constraints', (
+    tester,
+  ) async {
+    const boxKey = ValueKey('reel_text_loose_alignment_box');
+    const reelKey = ValueKey('reel_text_loose_alignment_reel');
+    final constraints = BoxConstraints(maxWidth: 240);
+    const style = TextStyle(fontSize: 32);
+    final painter = TextPainter(
+      text: const TextSpan(text: 'Go', style: style),
+      textDirection: TextDirection.ltr,
+      maxLines: 1,
+    )..layout();
+
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: Center(
+          child: SizedBox(
+            key: boxKey,
+            width: 240,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: ConstrainedBox(
+                constraints: constraints,
+                child: const ReelText(
+                  'Go',
+                  key: reelKey,
+                  textAlign: TextAlign.end,
+                  style: style,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final box = tester.getRect(find.byKey(boxKey));
+    final reel = tester.getRect(find.byKey(reelKey));
+    final lastGlyph = tester.getRect(find.text('o'));
+
+    expect(reel.width, closeTo(painter.size.width, 0.01));
+    expect(lastGlyph.right, lessThan(box.right));
+  });
+
+  testWidgets(
+    'textAlign end keeps stable glyphs anchored during shrinking roll',
+    (tester) async {
+      const boxKey = ValueKey('reel_text_alignment_box');
+      const options = ReelTextOptions(
+        duration: Duration(milliseconds: 120),
+        stagger: Duration.zero,
+        exitOffset: Duration.zero,
+      );
+
+      Widget wrap(String text) {
+        return Directionality(
+          textDirection: TextDirection.ltr,
+          child: Center(
+            child: SizedBox(
+              key: boxKey,
+              width: 240,
+              child: ReelText(
+                text,
+                textAlign: TextAlign.end,
+                options: options,
+                style: const TextStyle(fontFamily: 'Ahem', fontSize: 20),
+              ),
+            ),
+          ),
+        );
+      }
+
+      await tester.pumpWidget(wrap('Saved'));
+      await tester.pumpWidget(wrap('Save'));
+      await tester.pump(const Duration(milliseconds: 60));
+
+      final duringLeft = tester.getRect(find.text('S')).left;
+
+      await tester.pumpAndSettle();
+
+      final settledLeft = tester.getRect(find.text('S')).left;
+      expect(duringLeft, closeTo(settledLeft, 0.01));
+    },
+  );
 
   testWidgets('textAlign center aligns rolling glyphs inside bounded width', (
     tester,
@@ -382,6 +955,87 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.bySemanticsLabel('WAVY'), findsOneWidget);
   });
+
+  testWidgets('rolling slot clip keeps vertical bleed for glyph overhang', (
+    tester,
+  ) async {
+    const reelKey = ValueKey('bleed_reel');
+    const style = TextStyle(
+      color: Colors.black,
+      fontSize: 72,
+      fontWeight: FontWeight.w900,
+      fontStyle: FontStyle.italic,
+      height: 0.92,
+    );
+    const options = ReelTextOptions(
+      direction: ReelTextDirection.up,
+      duration: Duration(milliseconds: 120),
+      stagger: Duration.zero,
+      exitOffset: Duration.zero,
+      bounce: 0.8,
+      skipUnchanged: false,
+    );
+
+    Widget frame(String text) {
+      return Directionality(
+        textDirection: TextDirection.ltr,
+        child: Center(
+          child: ReelText(text, key: reelKey, style: style, options: options),
+        ),
+      );
+    }
+
+    await tester.pumpWidget(frame('ffff'));
+    final settledSize = tester.getSize(find.byKey(reelKey));
+
+    await tester.pumpWidget(frame('gggg'));
+    await tester.pump(const Duration(milliseconds: 60));
+
+    expect(tester.getSize(find.byKey(reelKey)), settledSize);
+    final clip = tester.widget<ClipRect>(find.byType(ClipRect).first);
+    final rect = clip.clipper!.getClip(settledSize);
+
+    expect(rect.top, lessThan(0));
+    expect(rect.bottom, greaterThan(settledSize.height));
+  });
+
+  testWidgets(
+    'inserted glyph starts outside the expanded clip on first frame',
+    (tester) async {
+      const reelKey = ValueKey('first_frame_reel');
+      const style = TextStyle(fontSize: 60, fontWeight: FontWeight.w900);
+      const options = ReelTextOptions(
+        direction: ReelTextDirection.up,
+        duration: Duration(milliseconds: 120),
+        stagger: Duration.zero,
+        exitOffset: Duration.zero,
+      );
+
+      Widget frame(String text) {
+        return Directionality(
+          textDirection: TextDirection.ltr,
+          child: Center(
+            child: ReelText(text, key: reelKey, style: style, options: options),
+          ),
+        );
+      }
+
+      await tester.pumpWidget(frame(''));
+      await tester.pumpWidget(frame('f'));
+
+      final clipFinder = find.byType(ClipRect).first;
+      final clip = tester.widget<ClipRect>(clipFinder);
+      final clipRect = clip.clipper!.getClip(tester.getSize(clipFinder));
+      final translations = tester
+          .widgetList<Transform>(find.byType(Transform))
+          .map((widget) => widget.transform.getTranslation().y)
+          .where((dy) => dy.abs() > 0.01)
+          .toList();
+
+      expect(translations, hasLength(1));
+      expect(translations.single, greaterThan(clipRect.bottom));
+    },
+  );
 
   testWidgets('descenders do not break the outgoing glyph handoff', (
     tester,
@@ -671,6 +1325,42 @@ void main() {
     expect(find.bySemanticsLabel('Idle'), findsOneWidget);
   });
 
+  test('runWhile emits waiting then success and returns the result', () async {
+    final controller = ReelTextController(initialText: 'Export');
+    addTearDown(controller.dispose);
+    final completer = Completer<int>();
+
+    final result = controller.runWhile(
+      () => completer.future,
+      waiting: 'Exporting',
+      success: 'Exported',
+      failure: 'Failed',
+    );
+
+    expect(controller.value, 'Exporting');
+
+    completer.complete(42);
+    expect(await result, 42);
+    expect(controller.value, 'Exported');
+  });
+
+  test('runWhile emits failure and rethrows operation errors', () async {
+    final controller = ReelTextController(initialText: 'Export');
+    addTearDown(controller.dispose);
+    final error = StateError('network');
+
+    final result = controller.runWhile<int>(
+      () async => throw error,
+      waiting: 'Exporting',
+      success: 'Exported',
+      failure: 'Failed',
+    );
+
+    expect(controller.value, 'Exporting');
+    await expectLater(result, throwsA(same(error)));
+    expect(controller.value, 'Failed');
+  });
+
   testWidgets('startWaiting ellipsis cycles trailing dots', (tester) async {
     final controller = ReelTextController(initialText: 'Load');
     addTearDown(controller.dispose);
@@ -749,6 +1439,37 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
     expect(controller.value, 'Go');
   });
+
+  testWidgets(
+    'startWaiting scramble mutates suffix and holds readable frames',
+    (tester) async {
+      final controller = ReelTextController(initialText: 'Sync');
+      addTearDown(controller.dispose);
+      final seen = <String>[];
+      controller.addListener(() => seen.add(controller.value));
+
+      final handle = controller.startWaiting(
+        'Sync',
+        waiting: const ReelWaiting.scramble(
+          alphabet: 'ab',
+          changedGlyphs: 1,
+          protectedPrefix: 3,
+          holdEvery: 2,
+          step: Duration(milliseconds: 50),
+        ),
+      );
+
+      await tester.pump(const Duration(milliseconds: 120));
+
+      expect(seen, hasLength(3));
+      expect(seen[0], 'Sync');
+      expect(seen[1], startsWith('Syn'));
+      expect(seen[1], isNot('Sync'));
+      expect(seen[2], 'Sync');
+
+      handle.cancel();
+    },
+  );
 
   testWidgets('snaps without rolling when animations are disabled', (
     tester,

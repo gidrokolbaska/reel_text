@@ -136,6 +136,20 @@ class _SlotPlan {
 
   double inT(double nowMs) => _curved(nowMs, baseMs + exitOffsetMs, durationMs);
 
+  double widthT(double nowMs) {
+    if (to.isEmpty) {
+      return _linear(
+        nowMs,
+        baseMs + (durationMs * 0.55).round(),
+        math.max(140, (durationMs * 0.6).round()),
+      );
+    }
+    if (from.isEmpty) {
+      return _linear(nowMs, baseMs, math.max(140, (durationMs * 0.45).round()));
+    }
+    return _linear(nowMs, baseMs, durationMs);
+  }
+
   double colorT(double nowMs) {
     if (color == null || colorFadeMs <= 0) {
       return 1;

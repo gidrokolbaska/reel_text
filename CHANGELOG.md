@@ -1,15 +1,30 @@
-## Unreleased
+## 0.1.0
 
 - Split internal implementation into focused Dart part files while preserving
   the public `package:reel_text/reel_text.dart` API.
-- Implemented and documented `textAlign` support for bounded-width `ReelText`
+- Implemented and documented `textAlign` support for fixed-width `ReelText`
   layouts, covering both settled and rolling glyph states.
 - Tightened layout to match Flutter `Text` exactly for settled and rolling
   target strings without extra animation padding.
 - Added SelectionArea support through a full-string selectable surface while
   keeping animated glyphs visual-only.
-- Added tests and examples for extended emoji clusters, selection, exact text
-  sizing, and a large multi-page AI document editing demo.
+- Added `ReelText.rich` for styled `TextSpan` phrases that still roll and select
+  as one plain-text run.
+- Added `ReelText.sequence` for rotating labels without manually wiring a
+  controller and timer.
+- Added `ReelTextController.runWhile` for async waiting/success/failure labels.
+- Added `ReelWaiting.scramble` for readable idle loops without custom frame
+  generators.
+- Added `ReelTextOptions` helpers for color modes and reversed direction.
+- Added `ReelTextEditingController`, a `TextEditingController` subclass for
+  animating inline replacements inside Flutter `EditableText` layouts.
+- Added `ReelTextEditingController.animateReplacements(replacements: ...)` and
+  `spanBuilder` to reduce subclass boilerplate for editable text integrations.
+- Added tests and examples for adjacent extended emoji clusters, selection,
+  exact text sizing, and an inline document editor demo for typo corrections.
+- Upgraded the editor demo to use a `SpellCheckService` pipeline with
+  LanguageTool, native platform spellcheck where available, and a deterministic
+  multilingual fallback for tests and offline demo phrases.
 
 ## 0.0.1
 

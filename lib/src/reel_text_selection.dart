@@ -2,8 +2,7 @@ part of 'reel_text.dart';
 
 class _ReelTextSelection extends StatelessWidget {
   const _ReelTextSelection({
-    required this.text,
-    required this.style,
+    required this.content,
     required this.textAlign,
     required this.textDirection,
     required this.locale,
@@ -11,8 +10,7 @@ class _ReelTextSelection extends StatelessWidget {
     required this.child,
   });
 
-  final String text;
-  final TextStyle style;
+  final _ReelTextContent content;
   final TextAlign textAlign;
   final TextDirection textDirection;
   final Locale? locale;
@@ -30,6 +28,7 @@ class _ReelTextSelection extends StatelessWidget {
     }
 
     return Stack(
+      fit: StackFit.passthrough,
       clipBehavior: Clip.none,
       children: [
         visual,
@@ -37,10 +36,7 @@ class _ReelTextSelection extends StatelessWidget {
           child: ExcludeSemantics(
             child: RichText(
               key: const ValueKey('reel_text_selection_surface'),
-              text: TextSpan(
-                text: text,
-                style: style.copyWith(color: Colors.transparent),
-              ),
+              text: _transparentTextSpan(content.span),
               textAlign: textAlign,
               textDirection: textDirection,
               locale: locale,

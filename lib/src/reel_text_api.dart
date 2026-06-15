@@ -99,6 +99,43 @@ class ReelTextOptions {
     );
   }
 
+  /// Returns options with roll direction flipped.
+  ReelTextOptions reversed() {
+    return copyWith(
+      direction: direction == ReelTextDirection.up
+          ? ReelTextDirection.down
+          : ReelTextDirection.up,
+    );
+  }
+
+  /// Returns options that use one incoming glyph [color].
+  ReelTextOptions withColor(Color color) {
+    return copyWith(clearColor: true, color: color);
+  }
+
+  /// Returns options that use a chromatic incoming glyph sweep.
+  ReelTextOptions withChromatic({
+    double from = 0,
+    double spread = 320,
+    double saturation = 0.92,
+    double lightness = 0.60,
+  }) {
+    return copyWith(
+      clearColor: true,
+      colorBuilder: chromatic(
+        from: from,
+        spread: spread,
+        saturation: saturation,
+        lightness: lightness,
+      ),
+    );
+  }
+
+  /// Returns options with any incoming glyph color mode removed.
+  ReelTextOptions withoutColor() {
+    return copyWith(clearColor: true);
+  }
+
   ReelTextOptions _merge(ReelTextOptions? other) => other ?? this;
 }
 
@@ -108,7 +145,11 @@ class ReelTextOptions {
 /// [tick] is the zero-based loop counter.
 typedef ReelWaitingFrameBuilder = String Function(String text, int tick);
 
-enum _ReelWaitingKind { ellipsis, wave, frames, builder }
+/// Builds per-value options for [ReelText.sequence].
+typedef ReelTextSequenceOptionsBuilder =
+    ReelTextOptions Function(int index, String value);
+
+enum _ReelWaitingKind { ellipsis, wave, frames, builder, scramble }
 
 /// A looping idle animation used by [ReelTextController.startWaiting].
 ///
@@ -126,7 +167,11 @@ class ReelWaiting {
       _kind = _ReelWaitingKind.ellipsis,
       rest = Duration.zero,
       frames = const <String>[],
-      frameBuilder = null;
+      frameBuilder = null,
+      alphabet = '',
+      changedGlyphs = 0,
+      protectedPrefix = 0,
+      holdEvery = 0;
 
   /// The whole label stays readable and periodically "breathes": a single
   /// stagger wave of self-rolls sweeps across the glyphs, then the label
@@ -140,7 +185,11 @@ class ReelWaiting {
       dot = '',
       step = null,
       frames = const <String>[],
-      frameBuilder = null;
+      frameBuilder = null,
+      alphabet = '',
+      changedGlyphs = 0,
+      protectedPrefix = 0,
+      holdEvery = 0;
 
   /// Cycles through explicit [frames] every [step].
   const ReelWaiting.frames(this.frames, {this.step})
@@ -148,7 +197,11 @@ class ReelWaiting {
       dots = 0,
       dot = '',
       rest = Duration.zero,
-      frameBuilder = null;
+      frameBuilder = null,
+      alphabet = '',
+      changedGlyphs = 0,
+      protectedPrefix = 0,
+      holdEvery = 0;
 
   /// Generates each frame with [frameBuilder] every [step].
   const ReelWaiting.builder(
@@ -158,7 +211,33 @@ class ReelWaiting {
        dots = 0,
        dot = '',
        rest = Duration.zero,
-       frames = const <String>[];
+       frames = const <String>[],
+       alphabet = '',
+       changedGlyphs = 0,
+       protectedPrefix = 0,
+       holdEvery = 0;
+
+  /// Scrambles a small suffix of the readable label between held frames.
+  ///
+  /// [protectedPrefix] keeps leading grapheme clusters unchanged, [changedGlyphs]
+  /// controls how many later clusters change per tick, and every [holdEvery]th
+  /// frame returns the original [ReelTextController.startWaiting] text.
+  const ReelWaiting.scramble({
+    this.alphabet = 'abcdefghijklmnopqrstuvwxyz',
+    this.changedGlyphs = 2,
+    this.protectedPrefix = 0,
+    this.holdEvery = 4,
+    this.step,
+  }) : assert(alphabet.length > 0),
+       assert(changedGlyphs > 0),
+       assert(protectedPrefix >= 0),
+       assert(holdEvery > 0),
+       _kind = _ReelWaitingKind.scramble,
+       dots = 0,
+       dot = '',
+       rest = Duration.zero,
+       frames = const <String>[],
+       frameBuilder = null;
 
   final _ReelWaitingKind _kind;
 
@@ -181,6 +260,18 @@ class ReelWaiting {
 
   /// Frame generator for [ReelWaiting.builder].
   final ReelWaitingFrameBuilder? frameBuilder;
+
+  /// Candidate glyphs used by [ReelWaiting.scramble].
+  final String alphabet;
+
+  /// Number of glyphs changed on each [ReelWaiting.scramble] tick.
+  final int changedGlyphs;
+
+  /// Leading glyph count left readable by [ReelWaiting.scramble].
+  final int protectedPrefix;
+
+  /// How often [ReelWaiting.scramble] emits the original readable label.
+  final int holdEvery;
 }
 
 /// Options for [ReelTextController.flash].

@@ -1,9 +1,14 @@
 part of 'reel_text.dart';
 
 class _TextRunMetrics {
-  const _TextRunMetrics({required this.widths, required this.height});
+  const _TextRunMetrics({
+    required this.widths,
+    required this.width,
+    required this.height,
+  });
 
   final List<double> widths;
+  final double width;
   final double height;
 
   double widthAt(int index) {
@@ -15,7 +20,7 @@ class _TextRunMetrics {
 
   static _TextRunMetrics of({
     required BuildContext context,
-    required TextStyle style,
+    required InlineSpan span,
     required TextDirection textDirection,
     required Locale? locale,
     required StrutStyle? strutStyle,
@@ -24,7 +29,7 @@ class _TextRunMetrics {
     final textScaler =
         MediaQuery.maybeTextScalerOf(context) ?? TextScaler.noScaling;
     final painter = TextPainter(
-      text: TextSpan(text: text, style: style),
+      text: span,
       textDirection: textDirection,
       textScaler: textScaler,
       locale: locale,
@@ -53,7 +58,12 @@ class _TextRunMetrics {
       widths[widths.length - 1] += painter.size.width - measured;
     }
 
-    return _TextRunMetrics(widths: widths, height: painter.size.height);
+    final totalWidth = widths.fold<double>(0, (sum, width) => sum + width);
+    return _TextRunMetrics(
+      widths: widths,
+      width: totalWidth,
+      height: painter.size.height,
+    );
   }
 
   static double _caretDx(TextPainter painter, int offset) {
